@@ -1,7 +1,8 @@
-from .core import Model, now, metadata, relationship
+from .core import db, Model, now, metadata, relationship
 from sqlalchemy import (
     Column, Integer, String, DateTime, Table, ForeignKey
 )
+from ..errors import UserBlockedException
 # from sqlalchemy.ext.hybrid import hybrid_property
 # from flask_sqlalchemy import SignallingSession
 
@@ -49,7 +50,7 @@ class User(Model):
 
     user_id = Column(Integer, primary_key=True)
 
-    email = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True)
 
     first_name = Column(String, nullable=True)
 
@@ -93,3 +94,68 @@ class User(Model):
         return {
             'user_id': self.user_id,
         }
+
+    def befriend(self, other_user):
+        """Befriends `other_user`, returns `self`"""
+        if not self.is_friend_of(other_user):
+            if other_user.is_blocking(self):
+                raise UserBlockedException()
+            self.friends.append(other_user)
+        return self
+
+    def unfriend(self, other_user):
+        """Unfriends `other_user`, returns `self`"""
+        if self.is_friend_of(other_user):
+            self.friends.remove(other_user)
+        return self
+
+    def is_friend_of(self, other_user):
+        """Returns True if `self` has befriended `other_user`."""
+        _assert_is_user(other_user)
+        q = self.friends.filter(
+            friendships.c.other_id == other_user.user_id).exists()
+        return db.session.query(q).scalar()
+
+    def follow(self, other_user):
+        """Follow `other_user`, returns `self`"""
+        if not self.is_following(other_user):
+            if other_user.is_blocking(self):
+                raise UserBlockedException()
+            self.following.append(other_user)
+        return self
+
+    def unfollow(self, other_user):
+        """Unfollow `other_user`, returns `self`"""
+        if self.is_following(other_user):
+            self.following.remove(other_user)
+        return self
+
+    def is_following(self, other_user):
+        """Returns True if `self` has followed `other_user`."""
+        _assert_is_user(other_user)
+        q = self.following.filter(
+            followers.c.other_id == other_user.user_id).exists()
+        return db.session.query(q).scalar()
+
+    def block(self, other_user):
+        """Blocks `other_user`, returns `self`"""
+        if not self.is_blocking(other_user):
+            self.blocked_users.append(other_user)
+        return self
+
+    def unblock(self, other_user):
+        """Unblocks `other_user`, returns `self`"""
+        if self.is_blocking(other_user):
+            self.blocked_users.remove(other_user)
+        return self
+
+    def is_blocking(self, other_user):
+        """Returns True if `self` has blocked `other_user`."""
+        _assert_is_user(other_user)
+        q = self.blocked_users.filter(
+            blocked_users.c.other_id == other_user.user_id).exists()
+        return db.session.query(q).scalar()
+
+
+def _assert_is_user(userMaybe):
+    assert isinstance(userMaybe, User), 'Expects user but got %s' % userMaybe
