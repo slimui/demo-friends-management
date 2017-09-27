@@ -1,72 +1,37 @@
-from .core import db, Model, now, metadata, relationship
-from ..logging import logger
-from sqlalchemy import (
-    Column, Integer, String, DateTime, Table, ForeignKey, event
-)
-from sqlalchemy.orm import object_session
+from .core import db, Model, metadata, relationship
 from ..errors import UserBlockedException
-from flask_sqlalchemy import SignallingSession
-from collections import defaultdict
-
-
-friendships = Table(
-    'friendships', metadata,
-    Column(
-        'befriender_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'other_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'created_at', DateTime(timezone=True), nullable=False, default=now)
+from sqlalchemy import (
+    Column, Integer, String, Table, ForeignKey, and_
 )
+from sqlalchemy.dialects.postgresql import insert
 
-followers = Table(
-    'followers', metadata,
-    Column(
-        'follower_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'other_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'created_at', DateTime(timezone=True), nullable=False, default=now)
-)
 
-blocked_users = Table(
-    'blocked_users', metadata,
-    Column(
-        'blocker_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'other_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'created_at', DateTime(timezone=True), nullable=False, default=now)
-)
+CONNECTION_NONE = 0
+"""Denotes no connections."""
 
-mentioned_users = Table(
-    'mentioned_users', metadata,
-    Column(
-        'mentioner_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'other_id', Integer, ForeignKey('users.user_id'),
-        primary_key=True),
-    Column(
-        'created_at', DateTime(timezone=True), nullable=False, default=now)
-)
+CONNECTION_FRIEND = 1 << 0
+"""Denotes source has befriended target."""
 
-connected_users = Table(
-    'connected_users', metadata,
+CONNECTION_FOLLOW = 1 << 1
+"""Denotes source is following target."""
+
+CONNECTION_BLOCK = 1 << 2
+"""Denotes source has blocked target."""
+
+CONNECTION_SUBSCRIBED = CONNECTION_FRIEND | CONNECTION_FOLLOW
+"""Denotes source has subscribed to target's updates."""
+
+
+connections = Table(
+    'connections', metadata,
     Column(
-        'connector_id', Integer, ForeignKey('users.user_id'),
+        'source_id', Integer, ForeignKey('users.user_id'),
         primary_key=True),
     Column(
-        'other_id', Integer, ForeignKey('users.user_id'),
+        'target_id', Integer, ForeignKey('users.user_id'),
         primary_key=True),
     Column(
-        'created_at', DateTime(timezone=True), nullable=False, default=now)
+        'connection', Integer, index=True, default=CONNECTION_NONE),
 )
 
 
@@ -94,35 +59,68 @@ class User(Model):
     introduction = Column(String, nullable=True)
 
     friends = relationship(
-        'User', secondary=friendships, cascade='all', lazy='dynamic',
-        primaryjoin=user_id == friendships.c.befriender_id,
-        secondaryjoin=user_id == friendships.c.other_id)
+        'User', secondary=connections,
+        cascade='all', lazy='dynamic', viewonly=True,
+        primaryjoin=and_(
+            user_id == connections.c.source_id,
+            connections.c.connection.op('&')(CONNECTION_FRIEND) > 0
+        ),
+        secondaryjoin=user_id == connections.c.target_id,
+    )
 
     following = relationship(
-        'User', secondary=followers, cascade='all', lazy='dynamic',
-        primaryjoin=user_id == followers.c.follower_id,
-        secondaryjoin=user_id == followers.c.other_id)
+        'User', secondary=connections,
+        cascade='all', lazy='dynamic', viewonly=True,
+        primaryjoin=and_(
+            user_id == connections.c.source_id,
+            connections.c.connection.op('&')(CONNECTION_FOLLOW) > 0
+        ),
+        secondaryjoin=user_id == connections.c.target_id,
+    )
 
-    # Note: this is view only. To add follower, use `following`
     followers = relationship(
-        'User', secondary=followers, cascade='all', lazy='dynamic',
-        primaryjoin=user_id == followers.c.other_id,
-        secondaryjoin=user_id == followers.c.follower_id, viewonly=True)
+        'User', secondary=connections,
+        cascade='all', lazy='dynamic', viewonly=True,
+        primaryjoin=and_(
+            user_id == connections.c.target_id,
+            connections.c.connection.op('&')(CONNECTION_FOLLOW) > 0
+        ),
+        secondaryjoin=user_id == connections.c.source_id,
+    )
 
-    blocked_users = relationship(
-        'User', secondary=blocked_users, cascade='all', lazy='dynamic',
-        primaryjoin=user_id == blocked_users.c.blocker_id,
-        secondaryjoin=user_id == blocked_users.c.other_id)
+    blocked = relationship(
+        'User', secondary=connections,
+        cascade='all', lazy='dynamic', viewonly=True,
+        primaryjoin=and_(
+            user_id == connections.c.source_id,
+            connections.c.connection.op('&')(CONNECTION_BLOCK) > 0
+        ),
+        secondaryjoin=user_id == connections.c.target_id,
+    )
 
-    mentioned_users = relationship(
-        'User', secondary=mentioned_users, cascade='all', lazy='dynamic',
-        primaryjoin=user_id == mentioned_users.c.mentioner_id,
-        secondaryjoin=user_id == mentioned_users.c.other_id)
+    subscribing = relationship(
+        'User', secondary=connections,
+        cascade='all', lazy='dynamic', viewonly=True,
+        primaryjoin=and_(
+            user_id == connections.c.source_id,
+            connections.c.connection.op('&')(CONNECTION_BLOCK) == 0,
+            connections.c.connection.op('&')(CONNECTION_SUBSCRIBED) > 0
+        ),
+        secondaryjoin=user_id == connections.c.target_id,
+    )
 
-    connected_users = relationship(
-        'User', secondary=connected_users, cascade='all', lazy='dynamic',
-        primaryjoin=user_id == connected_users.c.connector_id,
-        secondaryjoin=user_id == connected_users.c.other_id)
+    subscribers = relationship(
+        'User', secondary=connections,
+        cascade='all', lazy='dynamic', viewonly=True,
+        primaryjoin=and_(
+            user_id == connections.c.target_id,
+            connections.c.connection.op('&')(CONNECTION_BLOCK) == 0,
+            connections.c.connection.op('&')(CONNECTION_SUBSCRIBED) > 0
+        ),
+        secondaryjoin=user_id == connections.c.source_id,
+    )
+
+    __connections = None
 
     def __repr__(self):
         return '<User({})>'.format(self.user_id)
@@ -149,21 +147,18 @@ class User(Model):
         if not self.is_friend_of(other_user):
             if other_user.is_blocking(self):
                 raise UserBlockedException()
-            self.friends.append(other_user)
+            self._add_connection_with(other_user, CONNECTION_FRIEND)
         return self
 
     def unfriend(self, other_user):
         """Unfriends `other_user`, returns `self`"""
         if self.is_friend_of(other_user):
-            self.friends.remove(other_user)
+            self._remove_connection_with(other_user, CONNECTION_FRIEND)
         return self
 
     def is_friend_of(self, other_user):
         """Returns True if `self` has befriended `other_user`."""
-        _assert_is_user(other_user)
-        q = self.friends.filter(
-            friendships.c.other_id == other_user.user_id).exists()
-        return db.session.query(q).scalar()
+        return self._has_connection_with(other_user, CONNECTION_FRIEND)
 
     def follow(self, other_user):
         """Follow `other_user`, returns `self`.
@@ -182,21 +177,18 @@ class User(Model):
         if not self.is_following(other_user):
             if other_user.is_blocking(self):
                 raise UserBlockedException()
-            self.following.append(other_user)
+            self._add_connection_with(other_user, CONNECTION_FOLLOW)
         return self
 
     def unfollow(self, other_user):
         """Unfollow `other_user`, returns `self`"""
         if self.is_following(other_user):
-            self.following.remove(other_user)
+            self._remove_connection_with(other_user, CONNECTION_FOLLOW)
         return self
 
     def is_following(self, other_user):
         """Returns True if `self` has followed `other_user`."""
-        _assert_is_user(other_user)
-        q = self.following.filter(
-            followers.c.other_id == other_user.user_id).exists()
-        return db.session.query(q).scalar()
+        return self._has_connection_with(other_user, CONNECTION_FOLLOW)
 
     def block(self, other_user):
         """Blocks `other_user`, returns `self`.
@@ -213,107 +205,93 @@ class User(Model):
         ```
         """
         if not self.is_blocking(other_user):
-            self.blocked_users.append(other_user)
+            self._add_connection_with(other_user, CONNECTION_BLOCK)
         return self
 
     def unblock(self, other_user):
         """Unblocks `other_user`, returns `self`"""
         if self.is_blocking(other_user):
-            self.blocked_users.remove(other_user)
+            self._remove_connection_with(other_user, CONNECTION_BLOCK)
         return self
 
     def is_blocking(self, other_user):
         """Returns True if `self` has blocked `other_user`."""
-        _assert_is_user(other_user)
-        q = self.blocked_users.filter(
-            blocked_users.c.other_id == other_user.user_id).exists()
-        return db.session.query(q).scalar()
+        return self._has_connection_with(other_user, CONNECTION_BLOCK)
 
-    def mention(self, other_user):
-        """Mentioned `other_user`, returns `self`"""
-        if not self.has_mentioned(other_user):
-            self.mentioned_users.append(other_user)
-        return self
+    # Note: @mention is ambigious in the question.
+    # When does @mention establish connection:
+    #  - a @mention b?
+    #  - b @mention a?
+    #  - both?
+    # Leaving this feature out until clarification
+    # def mention(self, other_user):
+    #     """Mentioned `other_user`, returns `self`"""
+    #     if not self.has_mentioned(other_user):
+    #         self._add_connection_with(other_user, CONNECTION_MENTION)
+    #     return self
+    #
+    # def unmention(self, other_user):
+    #     """Unmention `other_user`, returns `self`"""
+    #     if self.has_mentioned(other_user):
+    #         self._remove_connection_with(other_user, CONNECTION_MENTION)
+    #     return self
+    #
+    # def has_mentioned(self, other_user):
+    #     """Returns True if `self` has mentioned `other_user`."""
+    #     return self._has_connection_with(other_user, CONNECTION_MENTION)
 
-    def unmention(self, other_user):
-        """Unmention `other_user`, returns `self`"""
-        if self.has_mentioned(other_user):
-            self.mentioned_users.remove(other_user)
-        return self
+    def is_subscribing(self, other_user):
+        """Returns True if `self` is subscribing to `other_user`.
 
-    def has_mentioned(self, other_user):
-        """Returns True if `self` has mentioned `other_user`."""
-        _assert_is_user(other_user)
-        q = self.mentioned_users.filter(
-            mentioned_users.c.other_id == other_user.user_id).exists()
-        return db.session.query(q).scalar()
-
-    def is_connected(self, other_user):
-        """Returns True if `self` is connected to `other_user`.
-
-        Connections are establised when:
+        Subscription is establised when:
         - self has not blocked other_user
         - at least one of the following:
           - self is a friend of other_user
           - self is a follower of other_user
-          - other_user has mentioned self
-          - self has mentioned other_user
+        """
+        connection = self._connection_with(other_user)
+        if connection & ~CONNECTION_BLOCK:
+            return connection & CONNECTION_SUBSCRIBED and True or False
+        return False
+
+    def _connection_with(self, other_user):
+        """Returns an bitwise flag containing connection information
+        with `other`. See `ConnectionTypes`.
         """
         _assert_is_user(other_user)
-        q = self.connected_users.filter(
-            connected_users.c.connector_id == other_user.user_id).exists()
-        return db.session.query(q).scalar()
+        if self.__connections is None:
+            self.__connections = {}
+        if other_user.user_id not in self.__connections:
+            q = db.session.query(connections.c.connection).\
+                filter(connections.c.source_id == self.user_id).\
+                filter(connections.c.target_id == other_user.user_id)
+            self.__connections[other_user.user_id] = \
+                q.scalar() or CONNECTION_NONE
+        return self.__connections.get(other_user.user_id, CONNECTION_NONE)
+
+    def _add_connection_with(self, other_user, connection):
+        current = self._connection_with(other_user)
+        return self._update_connection_with(other_user, current | connection)
+
+    def _remove_connection_with(self, other_user, connection):
+        current = self._connection_with(other_user)
+        return self._update_connection_with(other_user, current & ~connection)
+
+    def _has_connection_with(self, other_user, connection):
+        return self._connection_with(other_user) & connection == connection
+
+    def _update_connection_with(self, other_user, connection):
+        upsert = insert(connections).values(
+            source_id=self.user_id,
+            target_id=other_user.user_id,
+            connection=connection
+        ).on_conflict_do_update(
+            index_elements=('source_id', 'target_id'),
+            set_=dict(connection=connection)
+        )
+        db.session.execute(upsert)
+        self.__connections[other_user.user_id] = connection
 
 
 def _assert_is_user(userMaybe):
     assert isinstance(userMaybe, User), 'Expects user but got %s' % userMaybe
-
-
-@event.listens_for(User.friends, 'remove')
-@event.listens_for(User.friends, 'append')
-@event.listens_for(User.following, 'append')
-@event.listens_for(User.following, 'remove')
-@event.listens_for(User.blocked_users, 'append')
-@event.listens_for(User.blocked_users, 'remove')
-def _invalidate_connections(target, value, initiator):
-    _on_invalidate_connections(target, value)
-
-
-@event.listens_for(User.mentioned_users, 'append')
-@event.listens_for(User.mentioned_users, 'remove')
-def _invalidate_connections_reverse(target, value, initiator):
-    # mentions affects connections in both direction
-    _on_invalidate_connections(target, value)
-    _on_invalidate_connections(value, target)
-
-
-def _on_invalidate_connections(target, other_user):
-    assert target and other_user
-    session = object_session(target)
-    if not session:
-        return
-    if 'connections' not in session.info:
-        session.info['connections'] = connections = defaultdict(set)
-    else:
-        connections = session.info['connections']
-    connections[target.user_id].add(other_user.user_id)
-
-
-@event.listens_for(SignallingSession, 'before_commit')
-def _invalidate_connections_before_commit(session):
-    # This is important, before_commit may be called before flushing occurs,
-    # so we make sure the database is consistent before fixing connection
-    session.flush()
-    connections = session.info.get('connections')
-    if not connections:
-        return
-    del session.info['connections']
-    logger.warn('before_commit {}'.format(connections))
-
-
-@event.listens_for(SignallingSession, 'after_rollback')
-@event.listens_for(SignallingSession, 'after_soft_rollback')
-def _clean_connections_after_rollback(session, *args):
-    if 'connections' in session.info:
-        logger.warn('Clean Up for rollback')
-        del session.info['connections']
