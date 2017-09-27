@@ -58,6 +58,8 @@ class User(Model):
 
     introduction = Column(String, nullable=True)
 
+    avatar_url = Column(String, nullable=True)
+
     friends = relationship(
         'User', secondary=connections,
         cascade='all', lazy='dynamic', viewonly=True,

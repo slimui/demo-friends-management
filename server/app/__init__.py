@@ -1,5 +1,6 @@
 from flask import Flask
 from .config import Config
+from .logging import logger
 
 
 def create_app(config=Config):
@@ -18,5 +19,13 @@ def create_app(config=Config):
     from flask_graphql import GraphQLView
     graphql_view = GraphQLView.as_view('graphql', schema=schema, graphiql=True)
     app.add_url_rule('/graphql', view_func=graphql_view)
+
+    if app.debug and not app.testing:
+        from .samples import load_sample_users
+        with app.app_context():
+            logger.info('Initializing database..')
+            db.create_all()
+            load_sample_users()
+            db.session.commit()
 
     return app
