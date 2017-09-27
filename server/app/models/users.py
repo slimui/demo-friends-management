@@ -1,10 +1,13 @@
 from .core import db, Model, now, metadata, relationship
+from ..logging import logger
 from sqlalchemy import (
-    Column, Integer, String, DateTime, Table, ForeignKey
+    Column, Integer, String, DateTime, Table, ForeignKey, event
 )
+from sqlalchemy.orm import object_session
 from ..errors import UserBlockedException
-# from sqlalchemy.ext.hybrid import hybrid_property
-# from flask_sqlalchemy import SignallingSession
+from flask_sqlalchemy import SignallingSession
+from collections import defaultdict
+
 
 friendships = Table(
     'friendships', metadata,
@@ -57,7 +60,7 @@ mentioned_users = Table(
 connected_users = Table(
     'connected_users', metadata,
     Column(
-        'connecter_id', Integer, ForeignKey('users.user_id'),
+        'connector_id', Integer, ForeignKey('users.user_id'),
         primary_key=True),
     Column(
         'other_id', Integer, ForeignKey('users.user_id'),
@@ -115,6 +118,11 @@ class User(Model):
         'User', secondary=mentioned_users, cascade='all', lazy='dynamic',
         primaryjoin=user_id == mentioned_users.c.mentioner_id,
         secondaryjoin=user_id == mentioned_users.c.other_id)
+
+    connected_users = relationship(
+        'User', secondary=connected_users, cascade='all', lazy='dynamic',
+        primaryjoin=user_id == connected_users.c.connector_id,
+        secondaryjoin=user_id == connected_users.c.other_id)
 
     def __repr__(self):
         return '<User({})>'.format(self.user_id)
@@ -259,3 +267,53 @@ class User(Model):
 
 def _assert_is_user(userMaybe):
     assert isinstance(userMaybe, User), 'Expects user but got %s' % userMaybe
+
+
+@event.listens_for(User.friends, 'remove')
+@event.listens_for(User.friends, 'append')
+@event.listens_for(User.following, 'append')
+@event.listens_for(User.following, 'remove')
+@event.listens_for(User.blocked_users, 'append')
+@event.listens_for(User.blocked_users, 'remove')
+def _invalidate_connections(target, value, initiator):
+    _on_invalidate_connections(target, value)
+
+
+@event.listens_for(User.mentioned_users, 'append')
+@event.listens_for(User.mentioned_users, 'remove')
+def _invalidate_connections_reverse(target, value, initiator):
+    # mentions affects connections in both direction
+    _on_invalidate_connections(target, value)
+    _on_invalidate_connections(value, target)
+
+
+def _on_invalidate_connections(target, other_user):
+    assert target and other_user
+    session = object_session(target)
+    if not session:
+        return
+    if 'connections' not in session.info:
+        session.info['connections'] = connections = defaultdict(set)
+    else:
+        connections = session.info['connections']
+    connections[target.user_id].add(other_user.user_id)
+
+
+@event.listens_for(SignallingSession, 'before_commit')
+def _invalidate_connections_before_commit(session):
+    # This is important, before_commit may be called before flushing occurs,
+    # so we make sure the database is consistent before fixing connection
+    session.flush()
+    connections = session.info.get('connections')
+    if not connections:
+        return
+    del session.info['connections']
+    logger.warn('before_commit {}'.format(connections))
+
+
+@event.listens_for(SignallingSession, 'after_rollback')
+@event.listens_for(SignallingSession, 'after_soft_rollback')
+def _clean_connections_after_rollback(session, *args):
+    if 'connections' in session.info:
+        logger.warn('Clean Up for rollback')
+        del session.info['connections']
