@@ -42,6 +42,30 @@ blocked_users = Table(
         'created_at', DateTime(timezone=True), nullable=False, default=now)
 )
 
+mentioned_users = Table(
+    'mentioned_users', metadata,
+    Column(
+        'mentioner_id', Integer, ForeignKey('users.user_id'),
+        primary_key=True),
+    Column(
+        'other_id', Integer, ForeignKey('users.user_id'),
+        primary_key=True),
+    Column(
+        'created_at', DateTime(timezone=True), nullable=False, default=now)
+)
+
+connected_users = Table(
+    'connected_users', metadata,
+    Column(
+        'connecter_id', Integer, ForeignKey('users.user_id'),
+        primary_key=True),
+    Column(
+        'other_id', Integer, ForeignKey('users.user_id'),
+        primary_key=True),
+    Column(
+        'created_at', DateTime(timezone=True), nullable=False, default=now)
+)
+
 
 class User(Model):
     """Represents a user entity."""
@@ -87,6 +111,11 @@ class User(Model):
         primaryjoin=user_id == blocked_users.c.blocker_id,
         secondaryjoin=user_id == blocked_users.c.other_id)
 
+    mentioned_users = relationship(
+        'User', secondary=mentioned_users, cascade='all', lazy='dynamic',
+        primaryjoin=user_id == mentioned_users.c.mentioner_id,
+        secondaryjoin=user_id == mentioned_users.c.other_id)
+
     def __repr__(self):
         return '<User({})>'.format(self.user_id)
 
@@ -96,7 +125,19 @@ class User(Model):
         }
 
     def befriend(self, other_user):
-        """Befriends `other_user`, returns `self`"""
+        """Befriends `other_user`, returns `self`.
+
+        Note that friendships are bidirectional, i.e.
+        when self (befriender) -- befriends --> other_user
+        does not equate to other_user -- befriends --> self.
+
+        To create bidirectional friendships, you must establish connections
+        at both sides, example
+
+        ```
+        user1.befriend(user2.befriend(user1))
+        ```
+        """
         if not self.is_friend_of(other_user):
             if other_user.is_blocking(self):
                 raise UserBlockedException()
@@ -117,7 +158,19 @@ class User(Model):
         return db.session.query(q).scalar()
 
     def follow(self, other_user):
-        """Follow `other_user`, returns `self`"""
+        """Follow `other_user`, returns `self`.
+
+        Note that following is bidirectional, i.e.
+        when self (follower) -- follows --> other_user
+        does not equate to other_user -- follows --> self.
+
+        To create bidirectional following, you must establish connections
+        at both sides, example
+
+        ```
+        user1.follow(user2.follow(user1))
+        ```
+        """
         if not self.is_following(other_user):
             if other_user.is_blocking(self):
                 raise UserBlockedException()
@@ -138,7 +191,19 @@ class User(Model):
         return db.session.query(q).scalar()
 
     def block(self, other_user):
-        """Blocks `other_user`, returns `self`"""
+        """Blocks `other_user`, returns `self`.
+
+        Note that blocking is bidirectional, i.e.
+        when self (blocker) -- blocks --> other_user
+        does not equate to other_user -- blocks --> self.
+
+        To create bidirectional blocking, you must establish connections
+        at both sides, example
+
+        ```
+        user1.block(user2.block(user1))
+        ```
+        """
         if not self.is_blocking(other_user):
             self.blocked_users.append(other_user)
         return self
@@ -154,6 +219,41 @@ class User(Model):
         _assert_is_user(other_user)
         q = self.blocked_users.filter(
             blocked_users.c.other_id == other_user.user_id).exists()
+        return db.session.query(q).scalar()
+
+    def mention(self, other_user):
+        """Mentioned `other_user`, returns `self`"""
+        if not self.has_mentioned(other_user):
+            self.mentioned_users.append(other_user)
+        return self
+
+    def unmention(self, other_user):
+        """Unmention `other_user`, returns `self`"""
+        if self.has_mentioned(other_user):
+            self.mentioned_users.remove(other_user)
+        return self
+
+    def has_mentioned(self, other_user):
+        """Returns True if `self` has mentioned `other_user`."""
+        _assert_is_user(other_user)
+        q = self.mentioned_users.filter(
+            mentioned_users.c.other_id == other_user.user_id).exists()
+        return db.session.query(q).scalar()
+
+    def is_connected(self, other_user):
+        """Returns True if `self` is connected to `other_user`.
+
+        Connections are establised when:
+        - self has not blocked other_user
+        - at least one of the following:
+          - self is a friend of other_user
+          - self is a follower of other_user
+          - other_user has mentioned self
+          - self has mentioned other_user
+        """
+        _assert_is_user(other_user)
+        q = self.connected_users.filter(
+            connected_users.c.connector_id == other_user.user_id).exists()
         return db.session.query(q).scalar()
 
 

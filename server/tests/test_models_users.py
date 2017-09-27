@@ -54,6 +54,24 @@ class UserModelTest(DBTest):
 
         self.assertFalse(u1.is_following(u2))
 
+    def test_mention(self):
+        u1 = User(email='user1@test.com')
+        u2 = User(email='user2@test.com')
+        u3 = User(email='user3@test.com')
+        db.session.add(u1)
+        db.session.add(u2)
+        db.session.add(u3)
+        u1.mention(u2)
+        db.session.commit()
+
+        self.assertTrue(u1.has_mentioned(u2))
+        self.assertFalse(u1.has_mentioned(u3))
+
+        u1.unmention(u2)
+        db.session.commit()
+
+        self.assertFalse(u1.has_mentioned(u2))
+
     def test_blocking(self):
         u1 = User(email='user1@test.com')
         u2 = User(email='user2@test.com')
