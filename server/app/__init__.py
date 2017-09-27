@@ -7,6 +7,9 @@ def create_app(config=Config):
 
     app.config.from_object(config)
 
+    from .models import db
+    db.init_app(app)
+
     from .blueprints.views import blueprint as views
     app.register_blueprint(views)
 
