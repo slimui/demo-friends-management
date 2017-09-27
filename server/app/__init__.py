@@ -21,11 +21,11 @@ def create_app(config=Config):
     app.add_url_rule('/graphql', view_func=graphql_view)
 
     if app.debug and not app.testing:
-        from .samples import load_sample_users
+        from .samples import load_samples
         with app.app_context():
             logger.info('Initializing database..')
             db.create_all()
-            load_sample_users()
+            load_samples()
             db.session.commit()
 
     return app
