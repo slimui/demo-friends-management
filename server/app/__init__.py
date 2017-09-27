@@ -13,4 +13,10 @@ def create_app(config=Config):
     from .blueprints.views import blueprint as views
     app.register_blueprint(views)
 
+    # graphql endpoint
+    from .graphql import schema
+    from flask_graphql import GraphQLView
+    graphql_view = GraphQLView.as_view('graphql', schema=schema, graphiql=True)
+    app.add_url_rule('/graphql', view_func=graphql_view)
+
     return app
