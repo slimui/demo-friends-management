@@ -2,7 +2,7 @@ import graphene
 from graphene import relay
 from graphene_sqlalchemy import SQLAlchemyConnectionField
 from .users import User
-from ..models import User as UserModel
+from ..requests import current_user
 
 
 class Query(graphene.ObjectType):
@@ -12,8 +12,8 @@ class Query(graphene.ObjectType):
 
     all_users = SQLAlchemyConnectionField(lambda: User)
 
-    def resolve_me(self, args, context, info):
-        return UserModel.query.get(1)
+    def resolve_me(*args):
+        return current_user()
 
 
 types = [User]
