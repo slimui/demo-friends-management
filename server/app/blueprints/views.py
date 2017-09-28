@@ -11,10 +11,9 @@ blueprint = Blueprint('views', __name__)
 def index():
     q = User.query.order_by(User.first_name, User.last_name)
     users = [{
-        'user_id': user.user_id,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'avatar_url': user.avatar_url,
+        'userId': user.user_id,
+        'fullName': '{} {}'.format(user.first_name, user.last_name),
+        'avatarUrl': user.avatar_url,
     } for user in q.all()]
     return render_template('index.html', users=users)
 

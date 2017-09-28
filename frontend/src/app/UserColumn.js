@@ -25,7 +25,6 @@ class UserColumn extends React.Component {
             <label htmlFor="input-me-id" className="text-secondary small">
               View this app as
             </label>
-
             <select
               id="input-me-id"
               className="form-control"
@@ -34,8 +33,8 @@ class UserColumn extends React.Component {
             >
               {store.users.map(user => {
                 return (
-                  <option key={user.user_id} value={user.user_id}>
-                    {user.first_name} {user.last_name}
+                  <option key={user.userId} value={user.userId}>
+                    {user.fullName}
                   </option>
                 );
               })}

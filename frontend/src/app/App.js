@@ -1,6 +1,6 @@
 import React from "react";
 import UserColumn from "./UserColumn";
-import UsersContainer from "./UsersContainer";
+import UsersContainer from "./users/UsersContainer";
 
 const PORTAL_MIN_WIDTH = 768; // small devices, landscape
 const USER_COLUMN_WIDTH = 280;
@@ -30,7 +30,9 @@ const styles = {
     minWidth: PORTAL_MIN_WIDTH
   },
   usersContainer: {
-    flex: 1
+    flex: 1,
+    overflowY: "auto",
+    overflowX: "hidden"
   },
   userColumn: {
     width: USER_COLUMN_WIDTH

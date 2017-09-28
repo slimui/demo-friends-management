@@ -21,7 +21,7 @@ export class Store {
   @computed
   get me() {
     if (this.meId && this.users) {
-      return this.users.find(user => (user.user_id == this.meId));
+      return this.users.find(user => (user.userId == this.meId));
     }
     return null;
   }
@@ -31,7 +31,7 @@ export class Store {
     this.users = users || [];
     if (this.users.length) {
       const me = users.find(user => user.active);
-      this.meId = me ? me.user_id : users[0].user_id;
+      this.meId = me ? me.userId : users[0].userId;
     }
   }
 

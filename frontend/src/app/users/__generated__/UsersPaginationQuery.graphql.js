@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 9e15282d2d829814a55385696524476b
+ * @relayHash 951182088a8925ae5c8e10d9ff2b3b0d
  */
 
 /* eslint-disable */
@@ -9,12 +9,12 @@
 
 /*::
 import type {ConcreteBatch} from 'relay-runtime';
-export type UsersContainerQueryResponse = {| |};
+export type UsersPaginationQueryResponse = {| |};
 */
 
 
 /*
-query UsersContainerQuery(
+query UsersPaginationQuery(
   $count: Int!
   $cursor: String
 ) {
@@ -70,7 +70,7 @@ const batch /*: ConcreteBatch*/ = {
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "UsersContainerQuery",
+    "name": "UsersPaginationQuery",
     "selections": [
       {
         "kind": "FragmentSpread",
@@ -83,7 +83,7 @@ const batch /*: ConcreteBatch*/ = {
   "id": null,
   "kind": "Batch",
   "metadata": {},
-  "name": "UsersContainerQuery",
+  "name": "UsersPaginationQuery",
   "query": {
     "argumentDefinitions": [
       {
@@ -100,7 +100,7 @@ const batch /*: ConcreteBatch*/ = {
       }
     ],
     "kind": "Root",
-    "name": "UsersContainerQuery",
+    "name": "UsersPaginationQuery",
     "operation": "query",
     "selections": [
       {
@@ -282,7 +282,7 @@ const batch /*: ConcreteBatch*/ = {
       }
     ]
   },
-  "text": "query UsersContainerQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...UsersPagination_allUsers\n}\n\nfragment UsersPagination_allUsers on Query {\n  allUsers(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        ...UserCard_user\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment UserCard_user on User {\n  id\n  userId\n  firstName\n  address\n  avatarUrl\n  isFriendOfMe\n  isFollowingMe\n  isFollowedByMe\n  isBlockedByMe\n  isSubscribedByMe\n}\n"
+  "text": "query UsersPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...UsersPagination_allUsers\n}\n\nfragment UsersPagination_allUsers on Query {\n  allUsers(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        ...UserCard_user\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment UserCard_user on User {\n  id\n  userId\n  firstName\n  address\n  avatarUrl\n  isFriendOfMe\n  isFollowingMe\n  isFollowedByMe\n  isBlockedByMe\n  isSubscribedByMe\n}\n"
 };
 
 module.exports = batch;

@@ -1,19 +1,18 @@
 import React from "react";
-import Spinner from "./components/Spinner";
-import CenterBox from "./components/CenterBox";
+import Spinner from "../components/Spinner";
+import CenterBox from "../components/CenterBox";
 import { QueryRenderer, graphql } from "react-relay";
 import { inject, observer } from "mobx-react";
-import UserCard from './UserCard'
+import UsersPagination from "./UsersPagination";
 
 const query = graphql`
-  query UsersContainerQuery {
-    me {
-      userId
-      firstName
-      lastName
-    }
+  query UsersContainerQuery($count: Int!, $cursor: String) {
+    ...UsersPagination_allUsers
   }
 `;
+
+const PAGESIZE = 50;
+const variables = { count: PAGESIZE, cursor: null };
 
 @inject(["store"])
 @observer
@@ -26,7 +25,7 @@ class UsersContainer extends React.Component {
     let children;
     if (error) {
       children = (
-        <CenterBox>
+        <CenterBox style={{ height: '100%' }}>
           <div className="alert alert-danger d-inline p-3" role="alert">
             Sorry, an error has occurred.
           </div>
@@ -34,15 +33,17 @@ class UsersContainer extends React.Component {
       );
     } else if (!props) {
       children = (
-        <CenterBox>
+        <CenterBox style={{ height: '100%' }}>
           <Spinner visible />
         </CenterBox>
       );
     } else {
-      children = <code>TODO</code>;
+      children = (
+        <UsersPagination allUsers={props} pageSize={PAGESIZE} store={store} />
+      );
     }
     return (
-      <div {...restProps} className={`${className} d-flex flex-column p-3`}>
+      <div {...restProps} className={`${className} p-3`}>
         {children}
       </div>
     );
@@ -53,7 +54,7 @@ class UsersContainer extends React.Component {
       <QueryRenderer
         environment={this.props.store.environment}
         query={this.state.query}
-        variables={{ meId: store.meId }}
+        variables={variables}
         render={this._render}
       />
     );
