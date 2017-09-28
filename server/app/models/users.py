@@ -323,7 +323,7 @@ class User(Model):
           - self is a follower of user_or_id
         """
         connection = self._connection_with(user_or_id)
-        if connection & ~CONNECTION_BLOCK:
+        if not (connection & CONNECTION_BLOCK):
             return connection & CONNECTION_SUBSCRIBED and True or False
         return False
 
@@ -332,7 +332,7 @@ class User(Model):
         with `other`. See `ConnectionTypes`.
         """
         user_id = get_user_id(user_or_id, strict=True)
-        if user_id == current_user_id():
+        if user_id == self.user_id:
             return CONNECTION_NONE
         if self.__connections is None:
             self.__connections = {}
@@ -357,7 +357,7 @@ class User(Model):
 
     def _update_connection_with(self, user_or_id, connection):
         user_id = get_user_id(user_or_id, strict=True)
-        assert user_id != current_user_id(), \
+        assert user_id != self.user_id, \
             'Cannot set connection with oneself'
         upsert = insert(connections).values(
             source_id=self.user_id,

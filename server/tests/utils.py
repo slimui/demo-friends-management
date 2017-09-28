@@ -24,4 +24,4 @@ class DBTest(AppTest):
 
     def tearDown(self):
         db.session.remove()
-        # db.drop_all()
+        db.drop_all()
