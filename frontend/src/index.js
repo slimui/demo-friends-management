@@ -5,6 +5,8 @@ import $ from "jquery";
 import { Provider } from "mobx-react";
 import { Store } from "./app/store";
 
+const APPLICATION_ID = "application";
+
 const store = new Store();
 
 const render = Component => {
@@ -12,13 +14,15 @@ const render = Component => {
     <Provider store={store}>
       <Component />
     </Provider>,
-    document.getElementById("root")
+    document.getElementById(APPLICATION_ID)
   );
 };
 
 $(() => {
   // eslint-disable-next-line
-  $('<div id="root" />').appendTo("body");
+  if (window.__users__) {
+    store.initialize(window.__users__);
+  }
   render(App);
 });
 

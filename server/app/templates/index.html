@@ -2,11 +2,12 @@
 {% set title='Application' %}
 
 {% block head %}
-{#
-<script src="{{ url_for('views.lib', filename='common.bundle.js') }}" type="text/javascript"></script>
-#}
+<script type="text/javascript">
+var __users__ = {{ users|tojson|safe }};
+</script>
 {% endblock %}
 
 {% block body %}
+<div id="application" />
 <script src="{{ url_for('views.lib', filename='index.bundle.js') }}" type="text/javascript"></script>
 {% endblock %}
