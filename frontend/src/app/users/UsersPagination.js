@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import CenterBox from "../components/CenterBox";
 import Spinner from "../components/Spinner";
 import { createPaginationContainer, graphql } from "react-relay";
 import UserCard from "./UserCard";
@@ -8,12 +9,27 @@ class UsersPagination extends React.Component {
   static propTypes = {
     store: PropTypes.object.isRequired
   };
+  setRef = ref => {
+    if (!ref && this.ref) {
+      this.ref.parentNode.removeEventListener("scroll", this.handleParentScroll);
+    } else if (ref && !this.ref) {
+      this.ref = ref;
+      this.ref.parentNode.addEventListener("scroll", this.handleParentScroll);
+    }
+  };
+  handleParentScroll = evt => {
+    const bounds = this.ref.getBoundingClientRect();
+    const parentHeight = evt.target.getBoundingClientRect().height;
+    if (parentHeight - bounds.bottom >= 0) {
+      this.loadMore();
+    }
+  };
   loadMore = () => {
     const { relay, pageSize } = this.props;
     if (!relay.hasMore() || relay.isLoading()) {
       return;
     }
-    relay.loadMore(pageSize, console.log);
+    relay.loadMore(pageSize, err => {});
   };
   render() {
     const {
@@ -32,6 +48,7 @@ class UsersPagination extends React.Component {
       <div
         {...restProps}
         className={`${className} d-flex flex-wrap justify-content-around`}
+        ref={this.setRef}
       >
         {users.edges.map(edge => {
           return (
@@ -44,6 +61,9 @@ class UsersPagination extends React.Component {
             />
           );
         })}
+        <CenterBox className="mt-2 mb-3" style={{ width: "100%" }}>
+          <Spinner visible={relay.hasMore() && relay.isLoading()} />
+        </CenterBox>
       </div>
     );
   }

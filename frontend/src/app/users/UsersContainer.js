@@ -11,7 +11,7 @@ const query = graphql`
   }
 `;
 
-const PAGESIZE = 50;
+const PAGESIZE = 30;
 
 @inject(["store"])
 @observer
