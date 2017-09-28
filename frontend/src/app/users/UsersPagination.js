@@ -4,6 +4,7 @@ import CenterBox from "../components/CenterBox";
 import Spinner from "../components/Spinner";
 import { createPaginationContainer, graphql } from "react-relay";
 import UserCard from "./UserCard";
+import { debounce } from "lodash";
 
 class UsersPagination extends React.Component {
   static propTypes = {
@@ -11,19 +12,23 @@ class UsersPagination extends React.Component {
   };
   setRef = ref => {
     if (!ref && this.ref) {
-      this.ref.parentNode.removeEventListener("scroll", this.handleParentScroll);
+      this.ref.parentNode.removeEventListener(
+        "scroll",
+        this.handleParentScroll
+      );
     } else if (ref && !this.ref) {
       this.ref = ref;
       this.ref.parentNode.addEventListener("scroll", this.handleParentScroll);
     }
   };
-  handleParentScroll = evt => {
+  handleParentScroll = debounce(evt => {
+    if (!this.ref) return;
     const bounds = this.ref.getBoundingClientRect();
-    const parentHeight = evt.target.getBoundingClientRect().height;
+    const parentHeight = this.ref.parentNode.getBoundingClientRect().height;
     if (parentHeight - bounds.bottom >= 0) {
       this.loadMore();
     }
-  };
+  }, 600);
   loadMore = () => {
     const { relay, pageSize } = this.props;
     if (!relay.hasMore() || relay.isLoading()) {
@@ -62,7 +67,11 @@ class UsersPagination extends React.Component {
           );
         })}
         <CenterBox className="mt-2 mb-3" style={{ width: "100%" }}>
-          <Spinner visible={relay.hasMore() && relay.isLoading()} />
+          {relay.hasMore() ? (
+            <Spinner visible />
+          ) : (
+            <small className="text-secondary">End of results</small>
+          )}
         </CenterBox>
       </div>
     );
