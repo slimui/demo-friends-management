@@ -1,5 +1,5 @@
 import React from "react";
-import UserColumn from "./UserColumn";
+import SideColumn from "./SideColumn";
 import UsersContainer from "./users/UsersContainer";
 
 const PORTAL_MIN_WIDTH = 768; // small devices, landscape
@@ -14,7 +14,7 @@ export default class App extends React.Component {
           className="border border-left-0 border-top-0 border-bottom-0"
           style={styles.usersContainer}
         />
-        <UserColumn style={styles.userColumn} />
+        <SideColumn style={styles.sideColumn} />
       </div>
     );
   }
@@ -34,7 +34,7 @@ const styles = {
     overflowY: "auto",
     overflowX: "hidden"
   },
-  userColumn: {
+  sideColumn: {
     width: USER_COLUMN_WIDTH
   }
 };

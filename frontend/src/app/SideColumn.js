@@ -1,10 +1,10 @@
 import React from "react";
-import UserProfileCard from "./components/UserProfileCard";
+import UserAvatar from "./components/UserAvatar";
 import { inject, observer } from "mobx-react";
 
 @inject(["store"])
 @observer
-class UserColumn extends React.Component {
+class SideColumn extends React.Component {
   onUserSelect = evt => {
     const userId = Number(evt.target.value);
     if (!userId || isNaN(userId)) {
@@ -20,14 +20,13 @@ class UserColumn extends React.Component {
         {...restProps}
         className={`${className} d-flex flex-column bg-light p-3`}
       >
-        <form>
-          <div className="form-group">
-            <label htmlFor="input-me-id" className="text-secondary small">
-              View this app as
-            </label>
+        <div className="card d-flex flex-column justify-content-around align-items-center">
+          <UserAvatar url={store.me.avatarUrl} className="mt-3" />
+          <div className="card-body text-center p-2">
+            <p className="mb-1"><small className="text-secondary">View as User</small></p>
             <select
               id="input-me-id"
-              className="form-control"
+              className="form-control mb-2"
               value={store.meId}
               onChange={this.onUserSelect}
             >
@@ -40,12 +39,10 @@ class UserColumn extends React.Component {
               })}
             </select>
           </div>
-          <hr />
-          <UserProfileCard user={store.me} />
-        </form>
+        </div>
       </div>
     );
   }
 }
 
-export default UserColumn;
+export default SideColumn;

@@ -12,20 +12,32 @@ const query = graphql`
 `;
 
 const PAGESIZE = 50;
-const variables = { count: PAGESIZE, cursor: null };
 
 @inject(["store"])
 @observer
 class UsersContainer extends React.Component {
   state = {
-    query
+    query,
+    variables: { count: PAGESIZE, cursor: null, meId: null }
   };
+  componentWillMount() {
+    this.setState({ meId: this.props.store.meId });
+  }
+  componentWillUpdate(nextProps) {
+    if (this.state.variables.meId != nextProps.store.meId) {
+      const variables = {
+        ...this.state.variables,
+        meId: nextProps.store.meId
+      };
+      this.setState({ variables });
+    }
+  }
   _render = ({ props, error }) => {
     const { store, className = "", ...restProps } = this.props;
     let children;
     if (error) {
       children = (
-        <CenterBox style={{ height: '100%' }}>
+        <CenterBox style={{ height: "100%" }}>
           <div className="alert alert-danger d-inline p-3" role="alert">
             Sorry, an error has occurred.
           </div>
@@ -33,7 +45,7 @@ class UsersContainer extends React.Component {
       );
     } else if (!props) {
       children = (
-        <CenterBox style={{ height: '100%' }}>
+        <CenterBox style={{ height: "100%" }}>
           <Spinner visible />
         </CenterBox>
       );
@@ -49,12 +61,12 @@ class UsersContainer extends React.Component {
     );
   };
   render() {
-    const { store } = this.props;
+    this.props.store.meId; // triggers mobx observer
     return (
       <QueryRenderer
         environment={this.props.store.environment}
         query={this.state.query}
-        variables={variables}
+        variables={this.state.variables}
         render={this._render}
       />
     );
