@@ -35,6 +35,40 @@ connections = Table(
 )
 
 
+def get_user(user_or_id, strict=False):
+    """Ensures an User instance, where `user_or_id` can be either:
+    - a valid user_id
+    - a valid user
+
+    When `strict` is True, raises an error when no valid user is found."""
+    if isinstance(user_or_id, User):
+        user = user_or_id
+    elif isinstance(user_or_id, int):
+        user = User.query.get(user_or_id)
+    else:
+        user = None
+    if strict:
+        assert user, 'Expects valid `User` but got {}'.format(user_or_id)
+    return user
+
+
+def get_user_id(user_or_id, strict=False):
+    """Ensures a valid `user_id`, where `user_or_id` can be either:
+    - a valid user_id
+    - a valid user
+
+    When `strict` is True, raises an error when no valid user_id is found."""
+    if isinstance(user_or_id, int):
+        user_id = user_or_id
+    elif isinstance(user_or_id, User):
+        user_id = user_or_id.user_id
+    else:
+        user_id = 0
+    if strict:
+        assert user_id, 'Expects valid `user_id` but got {}'.format(user_or_id)
+    return user_id
+
+
 class User(Model):
     """Represents a user entity."""
 
@@ -127,17 +161,12 @@ class User(Model):
     def __repr__(self):
         return '<User({})>'.format(self.user_id)
 
-    def to_dict(self):
-        return {
-            'user_id': self.user_id,
-        }
-
-    def befriend(self, other_user):
-        """Befriends `other_user`, returns `self`.
+    def befriend(self, user_or_id):
+        """Befriends `user_or_id`, returns `self`.
 
         Note that friendships are bidirectional, i.e.
-        when self (befriender) -- befriends --> other_user
-        does not equate to other_user -- befriends --> self.
+        when self (befriender) -- befriends --> user_or_id
+        does not equate to user_or_id -- befriends --> self.
 
         To create bidirectional friendships, you must establish connections
         at both sides, example
@@ -146,28 +175,28 @@ class User(Model):
         user1.befriend(user2.befriend(user1))
         ```
         """
-        if not self.is_friend_of(other_user):
-            if other_user.is_blocking(self):
+        if not self.is_friend_of(user_or_id):
+            if user_or_id.is_blocking(self):
                 raise UserBlockedException()
-            self._add_connection_with(other_user, CONNECTION_FRIEND)
+            self._add_connection_with(user_or_id, CONNECTION_FRIEND)
         return self
 
-    def unfriend(self, other_user):
-        """Unfriends `other_user`, returns `self`"""
-        if self.is_friend_of(other_user):
-            self._remove_connection_with(other_user, CONNECTION_FRIEND)
+    def unfriend(self, user_or_id):
+        """Unfriends `user_or_id`, returns `self`"""
+        if self.is_friend_of(user_or_id):
+            self._remove_connection_with(user_or_id, CONNECTION_FRIEND)
         return self
 
-    def is_friend_of(self, other_user):
-        """Returns True if `self` has befriended `other_user`."""
-        return self._has_connection_with(other_user, CONNECTION_FRIEND)
+    def is_friend_of(self, user_or_id):
+        """Returns True if `self` has befriended `user_or_id`."""
+        return self._has_connection_with(user_or_id, CONNECTION_FRIEND)
 
-    def follow(self, other_user):
-        """Follow `other_user`, returns `self`.
+    def follow(self, user_or_id):
+        """Follow `user_or_id`, returns `self`.
 
         Note that following is bidirectional, i.e.
-        when self (follower) -- follows --> other_user
-        does not equate to other_user -- follows --> self.
+        when self (follower) -- follows --> user_or_id
+        does not equate to user_or_id -- follows --> self.
 
         To create bidirectional following, you must establish connections
         at both sides, example
@@ -176,28 +205,28 @@ class User(Model):
         user1.follow(user2.follow(user1))
         ```
         """
-        if not self.is_following(other_user):
-            if other_user.is_blocking(self):
+        if not self.is_following(user_or_id):
+            if user_or_id.is_blocking(self):
                 raise UserBlockedException()
-            self._add_connection_with(other_user, CONNECTION_FOLLOW)
+            self._add_connection_with(user_or_id, CONNECTION_FOLLOW)
         return self
 
-    def unfollow(self, other_user):
-        """Unfollow `other_user`, returns `self`"""
-        if self.is_following(other_user):
-            self._remove_connection_with(other_user, CONNECTION_FOLLOW)
+    def unfollow(self, user_or_id):
+        """Unfollow `user_or_id`, returns `self`"""
+        if self.is_following(user_or_id):
+            self._remove_connection_with(user_or_id, CONNECTION_FOLLOW)
         return self
 
-    def is_following(self, other_user):
-        """Returns True if `self` has followed `other_user`."""
-        return self._has_connection_with(other_user, CONNECTION_FOLLOW)
+    def is_following(self, user_or_id):
+        """Returns True if `self` has followed `user_or_id`."""
+        return self._has_connection_with(user_or_id, CONNECTION_FOLLOW)
 
-    def block(self, other_user):
-        """Blocks `other_user`, returns `self`.
+    def block(self, user_or_id):
+        """Blocks `user_or_id`, returns `self`.
 
         Note that blocking is bidirectional, i.e.
-        when self (blocker) -- blocks --> other_user
-        does not equate to other_user -- blocks --> self.
+        when self (blocker) -- blocks --> user_or_id
+        does not equate to user_or_id -- blocks --> self.
 
         To create bidirectional blocking, you must establish connections
         at both sides, example
@@ -206,19 +235,19 @@ class User(Model):
         user1.block(user2.block(user1))
         ```
         """
-        if not self.is_blocking(other_user):
-            self._add_connection_with(other_user, CONNECTION_BLOCK)
+        if not self.is_blocking(user_or_id):
+            self._add_connection_with(user_or_id, CONNECTION_BLOCK)
         return self
 
-    def unblock(self, other_user):
-        """Unblocks `other_user`, returns `self`"""
-        if self.is_blocking(other_user):
-            self._remove_connection_with(other_user, CONNECTION_BLOCK)
+    def unblock(self, user_or_id):
+        """Unblocks `user_or_id`, returns `self`"""
+        if self.is_blocking(user_or_id):
+            self._remove_connection_with(user_or_id, CONNECTION_BLOCK)
         return self
 
-    def is_blocking(self, other_user):
-        """Returns True if `self` has blocked `other_user`."""
-        return self._has_connection_with(other_user, CONNECTION_BLOCK)
+    def is_blocking(self, user_or_id):
+        """Returns True if `self` has blocked `user_or_id`."""
+        return self._has_connection_with(user_or_id, CONNECTION_BLOCK)
 
     # Note: @mention is ambigious in the question.
     # When does @mention establish connection:
@@ -226,74 +255,71 @@ class User(Model):
     #  - b @mention a?
     #  - both?
     # Leaving this feature out until clarification
-    # def mention(self, other_user):
-    #     """Mentioned `other_user`, returns `self`"""
-    #     if not self.has_mentioned(other_user):
-    #         self._add_connection_with(other_user, CONNECTION_MENTION)
+    # def mention(self, user_or_id):
+    #     """Mentioned `user_or_id`, returns `self`"""
+    #     if not self.has_mentioned(user_or_id):
+    #         self._add_connection_with(user_or_id, CONNECTION_MENTION)
     #     return self
     #
-    # def unmention(self, other_user):
-    #     """Unmention `other_user`, returns `self`"""
-    #     if self.has_mentioned(other_user):
-    #         self._remove_connection_with(other_user, CONNECTION_MENTION)
+    # def unmention(self, user_or_id):
+    #     """Unmention `user_or_id`, returns `self`"""
+    #     if self.has_mentioned(user_or_id):
+    #         self._remove_connection_with(user_or_id, CONNECTION_MENTION)
     #     return self
     #
-    # def has_mentioned(self, other_user):
-    #     """Returns True if `self` has mentioned `other_user`."""
-    #     return self._has_connection_with(other_user, CONNECTION_MENTION)
+    # def has_mentioned(self, user_or_id):
+    #     """Returns True if `self` has mentioned `user_or_id`."""
+    #     return self._has_connection_with(user_or_id, CONNECTION_MENTION)
 
-    def is_subscribing(self, other_user):
-        """Returns True if `self` is subscribing to `other_user`.
+    def is_subscribing(self, user_or_id):
+        """Returns True if `self` is subscribing to `user_or_id`.
 
         Subscription is establised when:
-        - self has not blocked other_user
+        - self has not blocked user_or_id
         - at least one of the following:
-          - self is a friend of other_user
-          - self is a follower of other_user
+          - self is a friend of user_or_id
+          - self is a follower of user_or_id
         """
-        connection = self._connection_with(other_user)
+        connection = self._connection_with(user_or_id)
         if connection & ~CONNECTION_BLOCK:
             return connection & CONNECTION_SUBSCRIBED and True or False
         return False
 
-    def _connection_with(self, other_user):
+    def _connection_with(self, user_or_id):
         """Returns an bitwise flag containing connection information
         with `other`. See `ConnectionTypes`.
         """
-        _assert_is_user(other_user)
+        user_id = get_user_id(user_or_id, strict=True)
         if self.__connections is None:
             self.__connections = {}
-        if other_user.user_id not in self.__connections:
+        if user_id not in self.__connections:
             q = db.session.query(connections.c.connection).\
                 filter(connections.c.source_id == self.user_id).\
-                filter(connections.c.target_id == other_user.user_id)
-            self.__connections[other_user.user_id] = \
+                filter(connections.c.target_id == user_id)
+            self.__connections[user_id] = \
                 q.scalar() or CONNECTION_NONE
-        return self.__connections.get(other_user.user_id, CONNECTION_NONE)
+        return self.__connections.get(user_id, CONNECTION_NONE)
 
-    def _add_connection_with(self, other_user, connection):
-        current = self._connection_with(other_user)
-        return self._update_connection_with(other_user, current | connection)
+    def _add_connection_with(self, user_or_id, connection):
+        current = self._connection_with(user_or_id)
+        return self._update_connection_with(user_or_id, current | connection)
 
-    def _remove_connection_with(self, other_user, connection):
-        current = self._connection_with(other_user)
-        return self._update_connection_with(other_user, current & ~connection)
+    def _remove_connection_with(self, user_or_id, connection):
+        current = self._connection_with(user_or_id)
+        return self._update_connection_with(user_or_id, current & ~connection)
 
-    def _has_connection_with(self, other_user, connection):
-        return self._connection_with(other_user) & connection == connection
+    def _has_connection_with(self, user_or_id, connection):
+        return self._connection_with(user_or_id) & connection == connection
 
-    def _update_connection_with(self, other_user, connection):
+    def _update_connection_with(self, user_or_id, connection):
+        user_id = get_user_id(user_or_id, strict=True)
         upsert = insert(connections).values(
             source_id=self.user_id,
-            target_id=other_user.user_id,
+            target_id=user_id,
             connection=connection
         ).on_conflict_do_update(
             index_elements=('source_id', 'target_id'),
             set_=dict(connection=connection)
         )
         db.session.execute(upsert)
-        self.__connections[other_user.user_id] = connection
-
-
-def _assert_is_user(userMaybe):
-    assert isinstance(userMaybe, User), 'Expects user but got %s' % userMaybe
+        self.__connections[user_id] = connection

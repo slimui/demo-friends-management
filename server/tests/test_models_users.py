@@ -25,6 +25,7 @@ class UserModelTest(DBTest):
         db.session.add(u1)
         db.session.add(u2)
         db.session.add(u3)
+        db.session.flush()
         u1.befriend(u2)
         db.session.commit()
 
@@ -45,6 +46,7 @@ class UserModelTest(DBTest):
         db.session.add(u1)
         db.session.add(u2)
         db.session.add(u3)
+        db.session.flush()
         u1.follow(u2)
         db.session.commit()
 
@@ -67,6 +69,7 @@ class UserModelTest(DBTest):
         db.session.add(u1)
         db.session.add(u2)
         db.session.add(u3)
+        db.session.flush()
         u1.block(u2)
         db.session.commit()
 
