@@ -9,10 +9,54 @@
   @extend .text-light;
 }
 
+// .btn:focus {
+//   outline: none;
+//   box-shadow: none;
+//   border: 2px solid transparent;
+// }
+
 a.disabled {
   color: $btn-link-disabled-color;
   pointer-events: none;
   text-decoration: none !important;
+}
+
+// light variants of bg-color, use bg-[color]-light
+
+@each $color, $value in $theme-colors {
+  @include bg-variant(".bg-#{$color}-light", theme-color-level($color, -11));
+}
+
+@mixin button-drawer-variant($color, $color-hover: #fff) {
+  color: $color;
+  background-color: transparent;
+  background-image: none;
+
+  @include hover {
+    background-color: $color-hover;
+  }
+
+  &.disabled,
+  &:disabled {
+    background-color: transparent;
+  }
+
+  &:active,
+  &.active,
+  .show > &.dropdown-toggle {
+    background-color: $color-hover;
+  }
+  border: none !important;
+}
+
+@each $color, $value in $theme-colors {
+  .btn-drawer-#{$color} {
+    @if $color == "light" {
+      @include button-drawer-variant($value, $gray-900);
+    } @else {
+      @include button-drawer-variant($value, $gray-100);
+    }
+  }
 }
 
 /* See: http://tobiasahlin.com/spinkit/ */
@@ -24,7 +68,7 @@ a.disabled {
 .spinner > div {
   width: 12px;
   height: 12px;
-  background-color: theme-color('primary');
+  background-color: theme-color("primary");
 
   border-radius: 100%;
   display: inline-block;
@@ -43,16 +87,25 @@ a.disabled {
 }
 
 @-webkit-keyframes sk-bouncedelay {
-  0%, 80%, 100% { -webkit-transform: scale(0) }
-  40% { -webkit-transform: scale(1.0) }
+  0%,
+  80%,
+  100% {
+    -webkit-transform: scale(0);
+  }
+  40% {
+    -webkit-transform: scale(1);
+  }
 }
 
 @keyframes sk-bouncedelay {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     -webkit-transform: scale(0);
     transform: scale(0);
-  } 40% {
-    -webkit-transform: scale(1.0);
-    transform: scale(1.0);
+  }
+  40% {
+    -webkit-transform: scale(1);
+    transform: scale(1);
   }
 }

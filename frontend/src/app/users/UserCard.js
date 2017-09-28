@@ -51,14 +51,25 @@ class UserCard extends React.Component {
   };
   render() {
     const { className = "", user, store, relay, ...restProps } = this.props;
-    const buttonClassName = "btn btn-md text-center border-0";
+    const buttonClassName = "btn btn-md text-center";
     const buttonProps = {
       type: "button",
       style: { flex: 1 }
     };
+    const mediaClassName =
+      "media p-3 border border-top-0 border-left-0 border-right-0";
     return (
-      <div {...restProps} className={`${className} card`}>
-        <div className="media p-3 bg-light border border-top-0 border-left-0 border-right-0">
+      <div
+        {...restProps}
+        className={`${className} card ${user.isSubscribedByMe
+          ? "border-success"
+          : ""}`}
+      >
+        <div
+          className={`${mediaClassName} ${user.isSubscribedByMe
+            ? "bg-success-light"
+            : "bg-light"}`}
+        >
           <UserAvatar
             url={user.avatarUrl}
             className="d-flex mr-3 align-self-center"
@@ -69,8 +80,8 @@ class UserCard extends React.Component {
               <span
                 className={
                   user.isSubscribedByMe
-                    ? "icon-android-cloud-done text-success"
-                    : "icon-android-cloud text-secondary"
+                    ? "icon-check-circle text-success"
+                    : "icon-check-circle-o text-secondary"
                 }
               >
                 &nbsp;
@@ -86,8 +97,8 @@ class UserCard extends React.Component {
             {...buttonProps}
             onClick={this.onFriendClick}
             className={`${buttonClassName} ${user.isFriendOfMe
-              ? "btn-outline-primary"
-              : "btn-outline-secondary"}`}
+              ? "btn-drawer-primary"
+              : "btn-drawer-secondary"}`}
           >
             <span className="icon-user-add">&nbsp;</span>
             <br />
@@ -97,8 +108,8 @@ class UserCard extends React.Component {
             {...buttonProps}
             onClick={this.onFollowClick}
             className={`${buttonClassName} ${user.isFollowedByMe
-              ? "btn-outline-primary"
-              : "btn-outline-secondary"}`}
+              ? "btn-drawer-primary"
+              : "btn-drawer-secondary"}`}
           >
             <span className="icon-rss">&nbsp;</span>
             <br />
@@ -108,8 +119,8 @@ class UserCard extends React.Component {
             {...buttonProps}
             onClick={this.onBlockClick}
             className={`${buttonClassName} ${user.isBlockedByMe
-              ? "btn-outline-primary"
-              : "btn-outline-secondary"}`}
+              ? "btn-drawer-primary"
+              : "btn-drawer-secondary"}`}
           >
             <span className="icon-ban">&nbsp;</span>
             <br />
