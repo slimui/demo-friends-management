@@ -28,6 +28,7 @@
       {
         "useBuiltIns": true
       }
-    ]
+    ],
+    "relay",
   ]
 }

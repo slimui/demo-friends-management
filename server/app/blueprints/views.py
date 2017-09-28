@@ -1,7 +1,8 @@
 from ..models import User
+from ..graphql import schema
 import requests
 from flask import (Blueprint, render_template, current_app, Response,
-                   stream_with_context)
+                   stream_with_context, jsonify, abort)
 
 blueprint = Blueprint('views', __name__)
 
@@ -16,6 +17,15 @@ def index():
         'avatar_url': user.avatar_url,
     } for user in q.all()]
     return render_template('index.html', users=users)
+
+
+@blueprint.route('/graphql/schema')
+def schema_():
+    if current_app.debug:
+        return jsonify({
+            'data': schema.introspect()
+        })
+    abort(404)
 
 
 @blueprint.route('/lib/<path:filename>')

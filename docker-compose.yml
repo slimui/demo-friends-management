@@ -34,6 +34,7 @@ services:
     volumes:
       # Mount server directory to local for development
       - ./server:/usr/src/local
+      - ./frontend/schema:/usr/src/local/schema
     working_dir: /usr/src/local
     # Run development server with flask
     command: ["/usr/local/bin/flask", "run", "--port=8000", "--host=0.0.0.0"]

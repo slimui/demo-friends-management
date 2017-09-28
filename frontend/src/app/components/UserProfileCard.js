@@ -17,11 +17,14 @@ export default class UserProfileCard extends React.Component {
       <div {...avatarProps} />
     );
     return (
-      <div {...restProps} className={`${className} card d-flex flex-column justify-content-around align-items-center`}>
+      <div
+        {...restProps}
+        className={`${className} card d-flex flex-column justify-content-around align-items-center`}
+      >
         {avatar}
         <div className="card-body">
           <small className="d-block text-secondary text-center">You Are</small>
-          <h4 class="card-title">
+          <h4 className="card-title">
             {user.first_name} {user.last_name}
           </h4>
         </div>

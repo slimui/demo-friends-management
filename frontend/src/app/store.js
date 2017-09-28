@@ -4,6 +4,12 @@ import invariant from "invariant";
 useStrict(true);
 
 export class Store {
+
+  /**
+   * Relay environment
+   */
+  environment = null;
+
   @observable users = [];
 
   /**

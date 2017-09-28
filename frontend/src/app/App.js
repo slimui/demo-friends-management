@@ -1,6 +1,6 @@
 import React from "react";
 import UserColumn from "./UserColumn";
-import MainColumn from "./MainColumn";
+import UsersContainer from "./UsersContainer";
 
 const PORTAL_MIN_WIDTH = 768; // small devices, landscape
 const USER_COLUMN_WIDTH = 280;
@@ -10,9 +10,9 @@ export default class App extends React.Component {
     const { store } = this.props;
     return (
       <div className="d-flex" style={styles.portal}>
-        <MainColumn
+        <UsersContainer
           className="border border-left-0 border-top-0 border-bottom-0"
-          style={styles.mainColumn}
+          style={styles.usersContainer}
         />
         <UserColumn style={styles.userColumn} />
       </div>
@@ -29,7 +29,7 @@ const styles = {
     bottom: 0,
     minWidth: PORTAL_MIN_WIDTH
   },
-  mainColumn: {
+  usersContainer: {
     flex: 1
   },
   userColumn: {
