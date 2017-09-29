@@ -5,8 +5,19 @@ const mutation = graphql`
     unfriend(input: $input) {
       users {
         id
+        fullName
         isFriendOfMe
         isSubscribedByMe
+        commonFriendsWithMe {
+          id
+          fullName
+          avatarUrl
+          commonFriendsWithMe {
+            id
+            fullName
+            avatarUrl
+          }
+        }
       }
     }
   }

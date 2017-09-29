@@ -9,7 +9,10 @@ import unblock from "../mutations/unblock";
 import follow from "../mutations/follow";
 import unfollow from "../mutations/unfollow";
 
+const CARDSIZE = 240;
 const AVATARSIZE = 64;
+const AVATARSMALLSIZE = 32;
+const SPACING = 6;
 
 class UserCard extends React.Component {
   static propTypes = {
@@ -56,27 +59,31 @@ class UserCard extends React.Component {
       type: "button",
       style: { flex: 1 }
     };
-    const mediaClassName =
-      "media p-3 border border-top-0 border-left-0 border-right-0";
     return (
       <div
         {...restProps}
+        style={{ width: CARDSIZE }}
         className={`${className} card ${user.isSubscribedByMe
           ? "border-success"
           : ""}`}
       >
         <div
-          className={`${mediaClassName} ${user.isSubscribedByMe
+          className={`d-flex align-items-center justify-content-around py-2 ${user.isSubscribedByMe
             ? "bg-success-light"
             : "bg-light"}`}
         >
           <UserAvatar
             url={user.avatarUrl}
-            className="d-flex mr-3 align-self-center"
+            border
             style={{ width: AVATARSIZE, height: AVATARSIZE }}
           />
-          <div className="media-body align-self-center">
-            <h6 className="mt-0">
+          <div
+            className="d-flex flex-column justify-content-center"
+            style={{
+              width: CARDSIZE - AVATARSIZE - SPACING * 3
+            }}
+          >
+            <h6 className="my-0 text-truncate">
               <span
                 className={
                   user.isSubscribedByMe
@@ -86,12 +93,44 @@ class UserCard extends React.Component {
               >
                 &nbsp;
               </span>
-              {user.firstName} {user.lastName}
-              <br />
-              <small className="text-secondary">{user.address}</small>
+              {user.fullName} Cras justo odio
             </h6>
+            <small className="d-inline-block text-truncate text-secondary">
+              {user.address} Cras justo odio
+            </small>
           </div>
         </div>
+        <ul className="list-group list-group-flush">
+          <li className="list-group-item">
+            <div className="d-flex justify-content-center" style={{ maxHeight: AVATARSMALLSIZE }}>
+              {!user.commonFriendsWithMe || !user.commonFriendsWithMe.length ? (
+                <small
+                  className="d-block text-secondary"
+                  style={{
+                    height: AVATARSMALLSIZE,
+                    lineHeight: `${AVATARSMALLSIZE}px`
+                  }}
+                >
+                  No Common Friends
+                </small>
+              ) : (
+                user.commonFriendsWithMe.map(friend => {
+                  return (
+                    <UserAvatar
+                      className="mx-1"
+                      key={friend.userId}
+                      url={friend.avatarUrl}
+                      style={{
+                        width: AVATARSMALLSIZE,
+                        height: AVATARSMALLSIZE
+                      }}
+                    />
+                  );
+                })
+              )}{" "}
+            </div>
+          </li>
+        </ul>
         <div className="d-flex" role="group" aria-label="Friends controls">
           <button
             {...buttonProps}
@@ -138,7 +177,7 @@ export default createFragmentContainer(
     fragment UserCard_user on User {
       id
       userId
-      firstName
+      fullName
       address
       avatarUrl
       isFriendOfMe
@@ -146,6 +185,12 @@ export default createFragmentContainer(
       isFollowedByMe
       isBlockedByMe
       isSubscribedByMe
+      commonFriendsWithMe {
+        id
+        userId
+        fullName
+        avatarUrl
+      }
     }
   `
 );

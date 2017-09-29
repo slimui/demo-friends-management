@@ -62,7 +62,6 @@ class UsersPagination extends React.Component {
               key={edge.node.id}
               store={store}
               className="mb-4"
-              style={{ width: "16em" }}
             />
           );
         })}

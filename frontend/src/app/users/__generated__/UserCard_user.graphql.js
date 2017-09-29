@@ -11,7 +11,7 @@ import type {ConcreteFragment} from 'relay-runtime';
 export type UserCard_user = {|
   +id: string;
   +userId: string;
-  +firstName: ?string;
+  +fullName: ?string;
   +address: ?string;
   +avatarUrl: ?string;
   +isFriendOfMe: ?boolean;
@@ -19,6 +19,12 @@ export type UserCard_user = {|
   +isFollowedByMe: ?boolean;
   +isBlockedByMe: ?boolean;
   +isSubscribedByMe: ?boolean;
+  +commonFriendsWithMe: ?$ReadOnlyArray<?{|
+    +id: string;
+    +userId: string;
+    +fullName: ?string;
+    +avatarUrl: ?string;
+  |}>;
 |};
 */
 
@@ -33,6 +39,13 @@ const fragment /*: ConcreteFragment*/ = {
       "kind": "ScalarField",
       "alias": null,
       "args": null,
+      "name": "isFriendOfMe",
+      "storageKey": null
+    },
+    {
+      "kind": "ScalarField",
+      "alias": null,
+      "args": null,
       "name": "id",
       "storageKey": null
     },
@@ -40,14 +53,7 @@ const fragment /*: ConcreteFragment*/ = {
       "kind": "ScalarField",
       "alias": null,
       "args": null,
-      "name": "userId",
-      "storageKey": null
-    },
-    {
-      "kind": "ScalarField",
-      "alias": null,
-      "args": null,
-      "name": "firstName",
+      "name": "fullName",
       "storageKey": null
     },
     {
@@ -68,7 +74,7 @@ const fragment /*: ConcreteFragment*/ = {
       "kind": "ScalarField",
       "alias": null,
       "args": null,
-      "name": "isFriendOfMe",
+      "name": "userId",
       "storageKey": null
     },
     {
@@ -97,6 +103,45 @@ const fragment /*: ConcreteFragment*/ = {
       "alias": null,
       "args": null,
       "name": "isSubscribedByMe",
+      "storageKey": null
+    },
+    {
+      "kind": "LinkedField",
+      "alias": null,
+      "args": null,
+      "concreteType": "User",
+      "name": "commonFriendsWithMe",
+      "plural": true,
+      "selections": [
+        {
+          "kind": "ScalarField",
+          "alias": null,
+          "args": null,
+          "name": "id",
+          "storageKey": null
+        },
+        {
+          "kind": "ScalarField",
+          "alias": null,
+          "args": null,
+          "name": "userId",
+          "storageKey": null
+        },
+        {
+          "kind": "ScalarField",
+          "alias": null,
+          "args": null,
+          "name": "fullName",
+          "storageKey": null
+        },
+        {
+          "kind": "ScalarField",
+          "alias": null,
+          "args": null,
+          "name": "avatarUrl",
+          "storageKey": null
+        }
+      ],
       "storageKey": null
     }
   ],

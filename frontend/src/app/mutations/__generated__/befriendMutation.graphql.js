@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 70c8e579dad0aee4dc6b323e95496cad
+ * @relayHash 8786a4dd131b081d766e0da1d8b79448
  */
 
 /* eslint-disable */
@@ -20,8 +20,19 @@ export type befriendMutationResponse = {|
   +befriend: ?{|
     +users: ?$ReadOnlyArray<?{|
       +id: string;
+      +fullName: ?string;
       +isFriendOfMe: ?boolean;
       +isSubscribedByMe: ?boolean;
+      +commonFriendsWithMe: ?$ReadOnlyArray<?{|
+        +id: string;
+        +fullName: ?string;
+        +avatarUrl: ?string;
+        +commonFriendsWithMe: ?$ReadOnlyArray<?{|
+          +id: string;
+          +fullName: ?string;
+          +avatarUrl: ?string;
+        |}>;
+      |}>;
     |}>;
   |};
 |};
@@ -35,8 +46,19 @@ mutation befriendMutation(
   befriend(input: $input) {
     users {
       id
+      fullName
       isFriendOfMe
       isSubscribedByMe
+      commonFriendsWithMe {
+        id
+        fullName
+        avatarUrl
+        commonFriendsWithMe {
+          id
+          fullName
+          avatarUrl
+        }
+      }
     }
   }
 }
@@ -90,6 +112,13 @@ const batch /*: ConcreteBatch*/ = {
                 "kind": "ScalarField",
                 "alias": null,
                 "args": null,
+                "name": "fullName",
+                "storageKey": null
+              },
+              {
+                "kind": "ScalarField",
+                "alias": null,
+                "args": null,
                 "name": "isFriendOfMe",
                 "storageKey": null
               },
@@ -98,6 +127,70 @@ const batch /*: ConcreteBatch*/ = {
                 "alias": null,
                 "args": null,
                 "name": "isSubscribedByMe",
+                "storageKey": null
+              },
+              {
+                "kind": "LinkedField",
+                "alias": null,
+                "args": null,
+                "concreteType": "User",
+                "name": "commonFriendsWithMe",
+                "plural": true,
+                "selections": [
+                  {
+                    "kind": "ScalarField",
+                    "alias": null,
+                    "args": null,
+                    "name": "id",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "ScalarField",
+                    "alias": null,
+                    "args": null,
+                    "name": "fullName",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "ScalarField",
+                    "alias": null,
+                    "args": null,
+                    "name": "avatarUrl",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  }
+                ],
                 "storageKey": null
               }
             ],
@@ -160,6 +253,13 @@ const batch /*: ConcreteBatch*/ = {
                 "kind": "ScalarField",
                 "alias": null,
                 "args": null,
+                "name": "fullName",
+                "storageKey": null
+              },
+              {
+                "kind": "ScalarField",
+                "alias": null,
+                "args": null,
                 "name": "isFriendOfMe",
                 "storageKey": null
               },
@@ -168,6 +268,70 @@ const batch /*: ConcreteBatch*/ = {
                 "alias": null,
                 "args": null,
                 "name": "isSubscribedByMe",
+                "storageKey": null
+              },
+              {
+                "kind": "LinkedField",
+                "alias": null,
+                "args": null,
+                "concreteType": "User",
+                "name": "commonFriendsWithMe",
+                "plural": true,
+                "selections": [
+                  {
+                    "kind": "ScalarField",
+                    "alias": null,
+                    "args": null,
+                    "name": "id",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "ScalarField",
+                    "alias": null,
+                    "args": null,
+                    "name": "fullName",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "ScalarField",
+                    "alias": null,
+                    "args": null,
+                    "name": "avatarUrl",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  }
+                ],
                 "storageKey": null
               }
             ],
@@ -178,7 +342,7 @@ const batch /*: ConcreteBatch*/ = {
       }
     ]
   },
-  "text": "mutation befriendMutation(\n  $input: UserConnectionMutationInput!\n) {\n  befriend(input: $input) {\n    users {\n      id\n      isFriendOfMe\n      isSubscribedByMe\n    }\n  }\n}\n"
+  "text": "mutation befriendMutation(\n  $input: UserConnectionMutationInput!\n) {\n  befriend(input: $input) {\n    users {\n      id\n      fullName\n      isFriendOfMe\n      isSubscribedByMe\n      commonFriendsWithMe {\n        id\n        fullName\n        avatarUrl\n        commonFriendsWithMe {\n          id\n          fullName\n          avatarUrl\n        }\n      }\n    }\n  }\n}\n"
 };
 
 module.exports = batch;

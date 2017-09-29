@@ -21,9 +21,11 @@ class SideColumn extends React.Component {
         className={`${className} d-flex flex-column bg-light p-3`}
       >
         <div className="card d-flex flex-column justify-content-around align-items-center">
-          <UserAvatar url={store.me.avatarUrl} className="mt-3" />
+          <UserAvatar url={store.me.avatarUrl} className="mt-3" border />
           <div className="card-body text-center p-2">
-            <p className="mb-1"><small className="text-secondary">View as User</small></p>
+            <p className="mb-1">
+              <small className="text-secondary">View as User</small>
+            </p>
             <select
               id="input-me-id"
               className="form-control mb-2"

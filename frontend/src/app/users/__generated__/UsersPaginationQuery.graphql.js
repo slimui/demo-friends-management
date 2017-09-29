@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 951182088a8925ae5c8e10d9ff2b3b0d
+ * @relayHash 6bff65196aff6091653e5f92bf02f505
  */
 
 /* eslint-disable */
@@ -41,7 +41,7 @@ fragment UsersPagination_allUsers on Query {
 fragment UserCard_user on User {
   id
   userId
-  firstName
+  fullName
   address
   avatarUrl
   isFriendOfMe
@@ -49,6 +49,12 @@ fragment UserCard_user on User {
   isFollowedByMe
   isBlockedByMe
   isSubscribedByMe
+  commonFriendsWithMe {
+    id
+    userId
+    fullName
+    avatarUrl
+  }
 }
 */
 
@@ -144,7 +150,7 @@ const batch /*: ConcreteBatch*/ = {
                     "kind": "ScalarField",
                     "alias": null,
                     "args": null,
-                    "name": "isFriendOfMe",
+                    "name": "isFollowingMe",
                     "storageKey": null
                   },
                   {
@@ -158,7 +164,7 @@ const batch /*: ConcreteBatch*/ = {
                     "kind": "ScalarField",
                     "alias": null,
                     "args": null,
-                    "name": "firstName",
+                    "name": "fullName",
                     "storageKey": null
                   },
                   {
@@ -179,14 +185,14 @@ const batch /*: ConcreteBatch*/ = {
                     "kind": "ScalarField",
                     "alias": null,
                     "args": null,
-                    "name": "userId",
+                    "name": "isFriendOfMe",
                     "storageKey": null
                   },
                   {
                     "kind": "ScalarField",
                     "alias": null,
                     "args": null,
-                    "name": "isFollowingMe",
+                    "name": "userId",
                     "storageKey": null
                   },
                   {
@@ -208,6 +214,45 @@ const batch /*: ConcreteBatch*/ = {
                     "alias": null,
                     "args": null,
                     "name": "isSubscribedByMe",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "userId",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
                     "storageKey": null
                   },
                   {
@@ -282,7 +327,7 @@ const batch /*: ConcreteBatch*/ = {
       }
     ]
   },
-  "text": "query UsersPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...UsersPagination_allUsers\n}\n\nfragment UsersPagination_allUsers on Query {\n  allUsers(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        ...UserCard_user\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment UserCard_user on User {\n  id\n  userId\n  firstName\n  address\n  avatarUrl\n  isFriendOfMe\n  isFollowingMe\n  isFollowedByMe\n  isBlockedByMe\n  isSubscribedByMe\n}\n"
+  "text": "query UsersPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...UsersPagination_allUsers\n}\n\nfragment UsersPagination_allUsers on Query {\n  allUsers(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        ...UserCard_user\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment UserCard_user on User {\n  id\n  userId\n  fullName\n  address\n  avatarUrl\n  isFriendOfMe\n  isFollowingMe\n  isFollowedByMe\n  isBlockedByMe\n  isSubscribedByMe\n  commonFriendsWithMe {\n    id\n    userId\n    fullName\n    avatarUrl\n  }\n}\n"
 };
 
 module.exports = batch;
