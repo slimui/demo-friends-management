@@ -15,7 +15,6 @@ export type UserCard_user = {|
   +address: ?string;
   +avatarUrl: ?string;
   +isFriendOfMe: ?boolean;
-  +isFollowingMe: ?boolean;
   +isFollowedByMe: ?boolean;
   +isBlockedByMe: ?boolean;
   +isSubscribedByMe: ?boolean;
@@ -39,14 +38,14 @@ const fragment /*: ConcreteFragment*/ = {
       "kind": "ScalarField",
       "alias": null,
       "args": null,
-      "name": "isFriendOfMe",
+      "name": "id",
       "storageKey": null
     },
     {
       "kind": "ScalarField",
       "alias": null,
       "args": null,
-      "name": "id",
+      "name": "userId",
       "storageKey": null
     },
     {
@@ -74,14 +73,7 @@ const fragment /*: ConcreteFragment*/ = {
       "kind": "ScalarField",
       "alias": null,
       "args": null,
-      "name": "userId",
-      "storageKey": null
-    },
-    {
-      "kind": "ScalarField",
-      "alias": null,
-      "args": null,
-      "name": "isFollowingMe",
+      "name": "isFriendOfMe",
       "storageKey": null
     },
     {

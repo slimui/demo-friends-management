@@ -448,6 +448,18 @@
               "deprecationReason": null
             }, 
             {
+              "name": "isFollowedByMe", 
+              "description": null, 
+              "args": [], 
+              "type": {
+                "kind": "SCALAR", 
+                "name": "Boolean", 
+                "ofType": null
+              }, 
+              "isDeprecated": false, 
+              "deprecationReason": null
+            }, 
+            {
               "name": "fullName", 
               "description": null, 
               "args": [], 
@@ -460,7 +472,19 @@
               "deprecationReason": null
             }, 
             {
-              "name": "isBlockedByMe", 
+              "name": "isFriendOfMe", 
+              "description": null, 
+              "args": [], 
+              "type": {
+                "kind": "SCALAR", 
+                "name": "Boolean", 
+                "ofType": null
+              }, 
+              "isDeprecated": false, 
+              "deprecationReason": null
+            }, 
+            {
+              "name": "isSubscribedByMe", 
               "description": null, 
               "args": [], 
               "type": {
@@ -488,43 +512,7 @@
               "deprecationReason": null
             }, 
             {
-              "name": "isFollowingMe", 
-              "description": null, 
-              "args": [], 
-              "type": {
-                "kind": "SCALAR", 
-                "name": "Boolean", 
-                "ofType": null
-              }, 
-              "isDeprecated": false, 
-              "deprecationReason": null
-            }, 
-            {
-              "name": "isFriendOfMe", 
-              "description": null, 
-              "args": [], 
-              "type": {
-                "kind": "SCALAR", 
-                "name": "Boolean", 
-                "ofType": null
-              }, 
-              "isDeprecated": false, 
-              "deprecationReason": null
-            }, 
-            {
-              "name": "isFollowedByMe", 
-              "description": null, 
-              "args": [], 
-              "type": {
-                "kind": "SCALAR", 
-                "name": "Boolean", 
-                "ofType": null
-              }, 
-              "isDeprecated": false, 
-              "deprecationReason": null
-            }, 
-            {
-              "name": "isSubscribedByMe", 
+              "name": "isBlockedByMe", 
               "description": null, 
               "args": [], 
               "type": {

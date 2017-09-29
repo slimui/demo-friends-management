@@ -6,22 +6,50 @@ from sqlalchemy import (
     Column, Integer, String, Table, ForeignKey, and_, select, func
 )
 from sqlalchemy.dialects.postgresql import insert
+from enum import Enum
 
 
-CONNECTION_NONE = 0
-"""Denotes no connections."""
+class ConnectionType(Enum):
+    NONE = 0
+    """Denotes no connections."""
 
-CONNECTION_FRIEND = 1 << 0
-"""Denotes source has befriended target."""
+    FRIEND = 1 << 0
+    """Denotes source has befriended target."""
 
-CONNECTION_FOLLOW = 1 << 1
-"""Denotes source is following target."""
+    FOLLOW = 1 << 1
+    """Denotes source is following target."""
 
-CONNECTION_BLOCK = 1 << 2
-"""Denotes source has blocked target."""
+    BLOCK = 1 << 2
+    """Denotes source has blocked target."""
 
-CONNECTION_SUBSCRIBED = CONNECTION_FRIEND | CONNECTION_FOLLOW
-"""Denotes source has subscribed to target's updates."""
+    SUBSCRIBED = FRIEND | FOLLOW
+    """Denotes source has subscribed to target's updates."""
+
+    @classmethod
+    def is_none(cls, connection):
+        return connection == cls.NONE.value
+
+    @classmethod
+    def is_friend(cls, connection):
+        return cls.has_connection(connection, cls.FRIEND)
+
+    @classmethod
+    def is_follow(cls, connection):
+        return cls.has_connection(connection, cls.FOLLOW)
+
+    @classmethod
+    def is_block(cls, connection):
+        return cls.has_connection(connection, cls.BLOCK)
+
+    @classmethod
+    def is_subscribed(cls, connection):
+        if not cls.is_block(connection):
+            return cls.has_connection(connection, cls.SUBSCRIBED)
+        return False
+
+    @classmethod
+    def has_connection(cls, connection, flag):
+        return connection & flag.value > 0
 
 
 connections = Table(
@@ -33,7 +61,8 @@ connections = Table(
         'target_id', Integer, ForeignKey('users.user_id'),
         primary_key=True),
     Column(
-        'connection', Integer, index=True, default=CONNECTION_NONE),
+        'connection', Integer, index=True,
+        default=lambda: ConnectionType.ConnectionType.NONE.value.value),
 )
 
 
@@ -85,7 +114,7 @@ def common_friends_between(source, targets):
         where(
             and_(
                 c.source_id == source_id,
-                c.connection.op('&')(CONNECTION_FRIEND) > 0
+                c.connection.op('&')(ConnectionType.FRIEND.value) > 0
             )
         ).\
         cte('friends')
@@ -97,7 +126,7 @@ def common_friends_between(source, targets):
             and_(
                 c.source_id.in_(target_ids),
                 c.target_id.in_(select([friends.c.target_id])),
-                c.connection.op('&')(CONNECTION_FRIEND) > 0
+                c.connection.op('&')(ConnectionType.FRIEND.value) > 0
             )
         ).\
         group_by(c.source_id)
@@ -211,7 +240,7 @@ class User(Model):
         cascade='all', lazy='dynamic', viewonly=True,
         primaryjoin=and_(
             user_id == connections.c.source_id,
-            connections.c.connection.op('&')(CONNECTION_FRIEND) > 0
+            connections.c.connection.op('&')(ConnectionType.FRIEND.value) > 0
         ),
         secondaryjoin=user_id == connections.c.target_id,
     )
@@ -221,7 +250,7 @@ class User(Model):
         cascade='all', lazy='dynamic', viewonly=True,
         primaryjoin=and_(
             user_id == connections.c.source_id,
-            connections.c.connection.op('&')(CONNECTION_FOLLOW) > 0
+            connections.c.connection.op('&')(ConnectionType.FOLLOW.value) > 0
         ),
         secondaryjoin=user_id == connections.c.target_id,
     )
@@ -231,7 +260,7 @@ class User(Model):
         cascade='all', lazy='dynamic', viewonly=True,
         primaryjoin=and_(
             user_id == connections.c.target_id,
-            connections.c.connection.op('&')(CONNECTION_FOLLOW) > 0
+            connections.c.connection.op('&')(ConnectionType.FOLLOW.value) > 0
         ),
         secondaryjoin=user_id == connections.c.source_id,
     )
@@ -241,7 +270,7 @@ class User(Model):
         cascade='all', lazy='dynamic', viewonly=True,
         primaryjoin=and_(
             user_id == connections.c.source_id,
-            connections.c.connection.op('&')(CONNECTION_BLOCK) > 0
+            connections.c.connection.op('&')(ConnectionType.BLOCK.value) > 0
         ),
         secondaryjoin=user_id == connections.c.target_id,
     )
@@ -251,8 +280,9 @@ class User(Model):
         cascade='all', lazy='dynamic', viewonly=True,
         primaryjoin=and_(
             user_id == connections.c.source_id,
-            connections.c.connection.op('&')(CONNECTION_BLOCK) == 0,
-            connections.c.connection.op('&')(CONNECTION_SUBSCRIBED) > 0
+            connections.c.connection.op('&')(ConnectionType.BLOCK.value) == 0,
+            connections.c.connection.op('&')
+                (ConnectionType.SUBSCRIBED.value) > 0
         ),
         secondaryjoin=user_id == connections.c.target_id,
     )
@@ -262,8 +292,9 @@ class User(Model):
         cascade='all', lazy='dynamic', viewonly=True,
         primaryjoin=and_(
             user_id == connections.c.target_id,
-            connections.c.connection.op('&')(CONNECTION_BLOCK) == 0,
-            connections.c.connection.op('&')(CONNECTION_SUBSCRIBED) > 0
+            connections.c.connection.op('&')(ConnectionType.BLOCK.value) == 0,
+            connections.c.connection.op('&')
+                (ConnectionType.SUBSCRIBED.value) > 0
         ),
         secondaryjoin=user_id == connections.c.source_id,
     )
@@ -291,18 +322,19 @@ class User(Model):
             user = get_user(user_or_id, strict=True)
             if user.is_blocking(self):
                 raise UserBlockedException()
-            self._add_connection_with(user_or_id, CONNECTION_FRIEND)
+            self._add_connection_with(user_or_id, ConnectionType.FRIEND)
         return self
 
     def unfriend(self, user_or_id):
         """Unfriends `user_or_id`, returns `self`"""
         if self.is_friend_of(user_or_id):
-            self._remove_connection_with(user_or_id, CONNECTION_FRIEND)
+            self._remove_connection_with(
+                user_or_id, ConnectionType.FRIEND)
         return self
 
     def is_friend_of(self, user_or_id):
         """Returns True if `self` has befriended `user_or_id`."""
-        return self._has_connection_with(user_or_id, CONNECTION_FRIEND)
+        return self._has_connection_with(user_or_id, ConnectionType.FRIEND)
 
     def follow(self, user_or_id):
         """Follow `user_or_id`, returns `self`.
@@ -322,18 +354,19 @@ class User(Model):
             user = get_user(user_or_id, strict=True)
             if user.is_blocking(self):
                 raise UserBlockedException()
-            self._add_connection_with(user_or_id, CONNECTION_FOLLOW)
+            self._add_connection_with(user_or_id, ConnectionType.FOLLOW)
         return self
 
     def unfollow(self, user_or_id):
         """Unfollow `user_or_id`, returns `self`"""
         if self.is_following(user_or_id):
-            self._remove_connection_with(user_or_id, CONNECTION_FOLLOW)
+            self._remove_connection_with(
+                user_or_id, ConnectionType.FOLLOW)
         return self
 
     def is_following(self, user_or_id):
         """Returns True if `self` has followed `user_or_id`."""
-        return self._has_connection_with(user_or_id, CONNECTION_FOLLOW)
+        return self._has_connection_with(user_or_id, ConnectionType.FOLLOW)
 
     def block(self, user_or_id):
         """Blocks `user_or_id`, returns `self`.
@@ -350,18 +383,19 @@ class User(Model):
         ```
         """
         if not self.is_blocking(user_or_id):
-            self._add_connection_with(user_or_id, CONNECTION_BLOCK)
+            self._add_connection_with(user_or_id, ConnectionType.BLOCK)
         return self
 
     def unblock(self, user_or_id):
         """Unblocks `user_or_id`, returns `self`"""
         if self.is_blocking(user_or_id):
-            self._remove_connection_with(user_or_id, CONNECTION_BLOCK)
+            self._remove_connection_with(
+                user_or_id, ConnectionType.BLOCK)
         return self
 
     def is_blocking(self, user_or_id):
         """Returns True if `self` has blocked `user_or_id`."""
-        return self._has_connection_with(user_or_id, CONNECTION_BLOCK)
+        return self._has_connection_with(user_or_id, ConnectionType.BLOCK)
 
     # Note: @mention is ambigious in the question.
     # When does @mention establish connection:
@@ -372,18 +406,20 @@ class User(Model):
     # def mention(self, user_or_id):
     #     """Mentioned `user_or_id`, returns `self`"""
     #     if not self.has_mentioned(user_or_id):
-    #         self._add_connection_with(user_or_id, CONNECTION_MENTION)
+    #         self._add_connection_with(
+    #           user_or_id, ConnectionType.MENTION)
     #     return self
     #
     # def unmention(self, user_or_id):
     #     """Unmention `user_or_id`, returns `self`"""
     #     if self.has_mentioned(user_or_id):
-    #         self._remove_connection_with(user_or_id, CONNECTION_MENTION)
+    #         self._remove_connection_with(
+    #           user_or_id, ConnectionType.MENTION)
     #     return self
     #
     # def has_mentioned(self, user_or_id):
     #     """Returns True if `self` has mentioned `user_or_id`."""
-    #     return self._has_connection_with(user_or_id, CONNECTION_MENTION)
+    #     return self._has_connection_with(user_or_id, ConnectionType.MENTION)
 
     def is_subscribing(self, user_or_id):
         """Returns True if `self` is subscribing to `user_or_id`.
@@ -395,9 +431,7 @@ class User(Model):
           - self is a follower of user_or_id
         """
         connection = self._connection_with(user_or_id)
-        if not (connection & CONNECTION_BLOCK):
-            return connection & CONNECTION_SUBSCRIBED and True or False
-        return False
+        return ConnectionType.is_subscribed(connection)
 
     def _connection_with(self, user_or_id):
         """Returns an bitwise flag containing connection information
@@ -405,7 +439,7 @@ class User(Model):
         """
         user_id = get_user_id(user_or_id, strict=True)
         if user_id == self.user_id:
-            return CONNECTION_NONE
+            return ConnectionType.NONE.value
         if self.__connections is None:
             self.__connections = {}
         if user_id not in self.__connections:
@@ -413,31 +447,34 @@ class User(Model):
                 filter(connections.c.source_id == self.user_id).\
                 filter(connections.c.target_id == user_id)
             self.__connections[user_id] = \
-                q.scalar() or CONNECTION_NONE
-        return self.__connections.get(user_id, CONNECTION_NONE)
+                q.scalar() or ConnectionType.NONE.value
+        return self.__connections.get(user_id, ConnectionType.NONE.value)
 
     def _add_connection_with(self, user_or_id, connection):
         current = self._connection_with(user_or_id)
-        return self._update_connection_with(user_or_id, current | connection)
+        return self._update_connection_with(
+            user_or_id, current | connection.value)
 
     def _remove_connection_with(self, user_or_id, connection):
         current = self._connection_with(user_or_id)
-        return self._update_connection_with(user_or_id, current & ~connection)
+        return self._update_connection_with(
+            user_or_id, current & ~connection.value)
 
     def _has_connection_with(self, user_or_id, connection):
-        return self._connection_with(user_or_id) & connection == connection
+        return ConnectionType.has_connection(
+            self._connection_with(user_or_id), connection)
 
-    def _update_connection_with(self, user_or_id, connection):
+    def _update_connection_with(self, user_or_id, value):
         user_id = get_user_id(user_or_id, strict=True)
         assert user_id != self.user_id, \
             'Cannot set connection with oneself'
         upsert = insert(connections).values(
             source_id=self.user_id,
             target_id=user_id,
-            connection=connection
+            connection=value
         ).on_conflict_do_update(
             index_elements=('source_id', 'target_id'),
-            set_=dict(connection=connection)
+            set_=dict(connection=value)
         )
         db.session.execute(upsert)
-        self.__connections[user_id] = connection
+        self.__connections[user_id] = value

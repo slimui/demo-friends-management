@@ -2,7 +2,7 @@ from ..logging import logger  # noqa
 from ..utils import g_get
 from ..models import (
     db, current_user, common_friends_between, current_user_id,
-    User as UserModel,
+    User as UserModel, connections, ConnectionType
 )
 from graphene import relay, types
 from graphene_sqlalchemy import SQLAlchemyObjectType
@@ -46,6 +46,28 @@ class CurrentUserCommonFriendIdsLoader(DataLoader):
         ])
 
 
+class CurrentUserConnectionLoader(DataLoader):
+
+    @classmethod
+    def loader(cls):
+        return g_get(
+            'current_user_connection_loader', lambda: cls(cache=True))
+
+    def batch_load_fn(self, keys):
+        target_ids = set(keys)
+        logger.debug('Batch loading connections with {}'.format(target_ids))
+        q = db.session.query(
+                connections.c.target_id,
+                connections.c.connection,
+            ).\
+            filter(connections.c.source_id == current_user_id()).\
+            filter(connections.c.target_id.in_(target_ids))
+        connects = dict(q.all())
+        return Promise.resolve([
+            connects.get(target_id, 0) for target_id in keys
+        ])
+
+
 class User(SQLAlchemyObjectType):
 
     class Meta:
@@ -68,7 +90,6 @@ class User(SQLAlchemyObjectType):
         local_fields = {
             'full_name': types.Field(types.String),
             'is_friend_of_me': types.Field(types.Boolean),
-            'is_following_me': types.Field(types.Boolean),
             'is_followed_by_me': types.Field(types.Boolean),
             'is_blocked_by_me': types.Field(types.Boolean),
             'is_subscribed_by_me': types.Field(types.Boolean),
@@ -79,19 +100,20 @@ class User(SQLAlchemyObjectType):
         return '{} {}'.format(self.first_name, self.last_name)
 
     def resolve_is_friend_of_me(self, args, context, info):
-        return current_user().is_friend_of(self)
-
-    def resolve_is_following_me(self, args, context, info):
-        return self.is_following(current_user())
+        return CurrentUserConnectionLoader.loader().load(self.user_id).\
+            then(ConnectionType.is_friend)
 
     def resolve_is_followed_by_me(self, args, context, info):
-        return current_user().is_following(self)
+        return CurrentUserConnectionLoader.loader().load(self.user_id).\
+            then(ConnectionType.is_follow)
 
     def resolve_is_blocked_by_me(self, args, context, info):
-        return current_user().is_blocking(self)
+        return CurrentUserConnectionLoader.loader().load(self.user_id).\
+            then(ConnectionType.is_block)
 
     def resolve_is_subscribed_by_me(self, args, context, info):
-        return current_user().is_subscribing(self)
+        return CurrentUserConnectionLoader.loader().load(self.user_id).\
+            then(ConnectionType.is_subscribed)
 
     def resolve_common_friends_with_me(self, args, context, info):
         if self.user_id == current_user_id():

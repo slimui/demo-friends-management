@@ -181,7 +181,6 @@ export default createFragmentContainer(
       address
       avatarUrl
       isFriendOfMe
-      isFollowingMe
       isFollowedByMe
       isBlockedByMe
       isSubscribedByMe

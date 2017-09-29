@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 6bff65196aff6091653e5f92bf02f505
+ * @relayHash 3eedbd0a986695d1ceac796bf163ef1f
  */
 
 /* eslint-disable */
@@ -45,7 +45,6 @@ fragment UserCard_user on User {
   address
   avatarUrl
   isFriendOfMe
-  isFollowingMe
   isFollowedByMe
   isBlockedByMe
   isSubscribedByMe
@@ -150,7 +149,7 @@ const batch /*: ConcreteBatch*/ = {
                     "kind": "ScalarField",
                     "alias": null,
                     "args": null,
-                    "name": "isFollowingMe",
+                    "name": "isFriendOfMe",
                     "storageKey": null
                   },
                   {
@@ -179,13 +178,6 @@ const batch /*: ConcreteBatch*/ = {
                     "alias": null,
                     "args": null,
                     "name": "avatarUrl",
-                    "storageKey": null
-                  },
-                  {
-                    "kind": "ScalarField",
-                    "alias": null,
-                    "args": null,
-                    "name": "isFriendOfMe",
                     "storageKey": null
                   },
                   {
@@ -327,7 +319,7 @@ const batch /*: ConcreteBatch*/ = {
       }
     ]
   },
-  "text": "query UsersPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...UsersPagination_allUsers\n}\n\nfragment UsersPagination_allUsers on Query {\n  allUsers(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        ...UserCard_user\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment UserCard_user on User {\n  id\n  userId\n  fullName\n  address\n  avatarUrl\n  isFriendOfMe\n  isFollowingMe\n  isFollowedByMe\n  isBlockedByMe\n  isSubscribedByMe\n  commonFriendsWithMe {\n    id\n    userId\n    fullName\n    avatarUrl\n  }\n}\n"
+  "text": "query UsersPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...UsersPagination_allUsers\n}\n\nfragment UsersPagination_allUsers on Query {\n  allUsers(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        ...UserCard_user\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment UserCard_user on User {\n  id\n  userId\n  fullName\n  address\n  avatarUrl\n  isFriendOfMe\n  isFollowedByMe\n  isBlockedByMe\n  isSubscribedByMe\n  commonFriendsWithMe {\n    id\n    userId\n    fullName\n    avatarUrl\n  }\n}\n"
 };
 
 module.exports = batch;
