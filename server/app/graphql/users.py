@@ -25,22 +25,21 @@ class UserLoader(DataLoader):
         return Promise.resolve([users.get(user_id, None) for user_id in keys])
 
 
-class CurrentUserCommonFriendsLoader(DataLoader):
+class CurrentUserCommonFriendIdsLoader(DataLoader):
 
     @classmethod
     def loader(cls):
         return g_get(
-            'current_user_common_friends_loader', lambda: cls(cache=True))
+            'current_user_common_friend_ids_loader', lambda: cls(cache=True))
 
     def batch_load_fn(self, keys):
         target_ids = set(keys)
         logger.debug('Batch loading common friend for {}'.format(target_ids))
         friends = dict(common_friends_between(current_user_id(), target_ids))
         # Use UserLoader to batch fetch friends
-        user_loader = UserLoader.loader()
         return Promise.resolve([
             Promise.resolve([
-                user_loader.load(friend_id)
+                friend_id
                 for friend_id in friends.get(target_id, [])
             ])
             for target_id in keys
@@ -97,7 +96,10 @@ class User(SQLAlchemyObjectType):
     def resolve_common_friends_with_me(self, args, context, info):
         if self.user_id == current_user_id():
             return []
-        return CurrentUserCommonFriendsLoader.loader().load(self.user_id)
+        user_loader = UserLoader.loader()
+        return CurrentUserCommonFriendIdsLoader.loader().load(self.user_id).\
+            then(lambda friend_ids: Promise.resolve(
+                [user_loader.load(friend_id) for friend_id in friend_ids]))
 
 
 ALLOWED_CONNECTION_MUTATIONS = (
@@ -111,6 +113,7 @@ class UserConnectionMutation(relay.ClientIDMutation):
         user_id = types.List(types.Int, required=True)
 
     users = types.List(User)
+    related_users = types.List(User)
 
     @classmethod
     def mutate_and_get_payload(cls, input, context, info):
@@ -122,14 +125,25 @@ class UserConnectionMutation(relay.ClientIDMutation):
             assert user_ids, 'Expects array of user_id'
             me = current_user()
             assert me, '`current_user` not available'
+            if mutation in ('befriend', 'unfriend'):
+                # befriending/unfriending needs special handling
+                # as we need to provide means to access the changes
+                # to common friends, especially in unfriending.
+                # We cache the common friend here
+                common = common_friends_between(current_user_id(), user_ids)
+                related_user_ids = sum(  # flatten array
+                    [friend_ids for _, friend_ids in common], [])
+            else:
+                related_user_ids = []
             mutate = getattr(me, mutation)
             for user_id in user_ids:
                 mutate(user_id)
             db.session.commit()
-            q = UserModel.query.filter(UserModel.user_id.in_(user_ids))
-            users = dict([(u.user_id, u) for u in q.all()])
+            user_loader = UserLoader.loader()
             return cls(
-                users=[users.get(user_id, None) for user_id in user_ids]
+                users=[user_loader.load(user_id) for user_id in user_ids],
+                related_users=[
+                    user_loader.load(user_id) for user_id in related_user_ids]
             )
         except Exception as e:
             logger.exception(e)
