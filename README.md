@@ -1,5 +1,7 @@
 ## Friends Management Demo
 
+![Preview](https://raw.githubusercontent.com/ivanchoo/demo-friends-management/master/preview.gif)
+
 A "Friends Management" application typically found in a social network. Build with React ⚛ + GraphQL ☸ + Python 🐍.
 
 ### Goal
@@ -14,12 +16,12 @@ The original exercise describes a series of REST API to provide features like:
  - Fetching friends (and followers)
  - Fetching common friends
  - Block/unblock users
- - Fetching a list of users whom an individual (aka subscriber) will subscribe to for (feed) updates, base on the following rules:
+ - Fetching a list of users where an individual (aka subscriber) will subscribe to for (feed) updates, base on the following rules:
    - The subscriber has not blocked the user
    - The subscriber has at least one of the following:
      - Is a friend of the user
      - Is a follower of the user
-     - ~~has `@mention` the user~~ (this was not included in the project as it is unclear what `@mention` constitutes)
+     - ~~has `@mention` the user~~ (this was not included in this project as it is unclear what `@mention` constitutes)
 
 ### Instructions
 
@@ -64,40 +66,44 @@ $ docker-compose down
 
 ### Design Consideration
 
-While the project requirements are quite straight forward, things get really complex when working with a social graph, where nodes (individual actors, people, things within the network) have relationships and connections (edges, links) with each other. Conventional web architecture will soon hit a roadblock as project requirements evolves and relationships become more sophisticated.
+While the project requirements are quite straight forward, things can get really complex when working with a social graph, where nodes (individual actors, people, things within the network) have relationships and connections (edges, links) with each other. Conventional web architecture will soon hit a roadblock as project requirements evolves and relationships become more sophisticated.
 
 For example, a typical fetch friends api like `/api/user/[id]/friends` will soon become a bottleneck when the UI needs to:
 - Show friends and **friends of friends**
 - Show a list of users and **common friends** with the current user
-- Show a list of users and list their **common interest**, like places visited, liked page or joined group
+- Show a list of users and list their **common interest**, like places visited, liked pages or joined groups
 - When an action changes a relationship (e.g. friendships) that requires an update of the connections between multiple actors
 
-**This will result in either a waterfall of network request (1 + n problem) or an explosion of API endpoints, not to mention the complexity to sync the UI state with the backend state.**
+**This will result in either a waterfall of network request (1 + n problem) or an explosion of API endpoints, not to mention the complexity to sync the frontend UI with the backend state.**
 
 For this reason, I've chose to adopt [GraphQL](http://graphql.org) to power the API architecture. By providing a dynamic query based API, we can solve problems that are apparent in a social network-like application.
 
 #### Backend Architecture
 
-This project uses [Graphene](http://graphene-python.org) implementation of GraphQL, together with [SQLAlchemy](https://www.sqlalchemy.org) to provide SQL access interface to the backend PostgresSQL database.
+This project uses [Graphene](http://graphene-python.org) implementation of GraphQL, together with [SQLAlchemy](https://www.sqlalchemy.org) to provide SQL access interface to the backend PostgresSQL database. It provides
 
 - One single GraphQL endpoint for all data queries
 - No more endpoint versioning, there will forever be **ONE** version, i.e. the current version
 - Tooling for rapid testing and developing API endpoint ([GraphiQL](https://github.com/graphql/graphiql))
-- Self documenting API endpoints
+- Self documenting API
 
 This project also apply some optimisation techniques like [DataLoader](http://docs.graphene-python.org/en/latest/execution/dataloader/) as a fetching layer to provide a consistent and highly optimised data access to the backend database. This allows us to perform batch fetching of data without sacrificing code flow and clarity. This effectively work around the n+1 fetching problem.
 
+To view this in action, look at the server logs while using the application to see the actual SQL emitted to the database.
+
+```
+$ docker-compose logs -f server
+```
+
 #### Frontend Architecture
 
-This project leverages React + [Relay](https://facebook.github.io/relay/docs/relay-modern.html) to build the UI layer.
-
-Relay provides us many benefits:
+This project leverages React + [Relay](https://facebook.github.io/relay/docs/relay-modern.html) to build the UI layer. Relay provides us many benefits:
 
 - Decide what data you need using GraphQL query language **when** you code the UI
-- Co-locate the data access within the Views for clarity and agility
-- Test and tune the data access right in the browser
+- Co-locate the GraphQL within the Views for clarity and agility
+- Test and tune GraphQL right in the browser (using GraphiQL)
 - Plays nice with React's declarative nature
-- No need to duplicate backend logic to maintain complex graph
+- Avoid duplicating backend logic to maintain complex graph
 - Batch querying, caching, data consistency, optimistic updates comes built-in
 - Supports subscription (e.g. live updates) and persisted queries for future needs
 
