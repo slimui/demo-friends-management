@@ -1,16 +1,20 @@
-from ..logging import logger
+from ..logging import logger  # noqa
+from ..utils import g_get
 from ..models import (
-    db, current_user, current_user_id, connections, User as UserModel,
-    CONNECTION_FRIEND
+    db, current_user, common_friends_between, current_user_id,
+    User as UserModel,
 )
 from graphene import relay, types
 from graphene_sqlalchemy import SQLAlchemyObjectType
 from promise import Promise
 from promise.dataloader import DataLoader
-from flask import g
 
 
 class UserLoader(DataLoader):
+
+    @classmethod
+    def loader(cls):
+        return g_get('user_loader', lambda: cls(cache=True))
 
     def batch_load_fn(self, keys):
         user_ids = set(keys)
@@ -21,10 +25,26 @@ class UserLoader(DataLoader):
         return Promise.resolve([users.get(user_id, None) for user_id in keys])
 
 
-def current_user_loader():
-    if not hasattr(g, 'user_loader'):
-        setattr(g, 'user_loader', UserLoader(cache=True))
-    return g.user_loader
+class CurrentUserCommonFriendsLoader(DataLoader):
+
+    @classmethod
+    def loader(cls):
+        return g_get(
+            'current_user_common_friends_loader', lambda: cls(cache=True))
+
+    def batch_load_fn(self, keys):
+        target_ids = set(keys)
+        logger.debug('Batch loading common friend for {}'.format(target_ids))
+        friends = dict(common_friends_between(current_user_id(), target_ids))
+        # Use UserLoader to batch fetch friends
+        user_loader = UserLoader.loader()
+        return Promise.resolve([
+            Promise.resolve([
+                user_loader.load(friend_id)
+                for friend_id in friends.get(target_id, [])
+            ])
+            for target_id in keys
+        ])
 
 
 class User(SQLAlchemyObjectType):
@@ -75,7 +95,9 @@ class User(SQLAlchemyObjectType):
         return current_user().is_subscribing(self)
 
     def resolve_common_friends_with_me(self, args, context, info):
-        return []
+        if self.user_id == current_user_id():
+            return []
+        return CurrentUserCommonFriendsLoader.loader().load(self.user_id)
 
 
 ALLOWED_CONNECTION_MUTATIONS = (
