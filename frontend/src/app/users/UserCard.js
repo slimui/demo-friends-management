@@ -19,6 +19,13 @@ class UserCard extends React.Component {
     store: PropTypes.object.isRequired,
     user: PropTypes.object
   };
+  onAvatarClick = evt => {
+    evt.preventDefault();
+    const { user, store } = this.props;
+    if (store.meId != user.userId) {
+      store.become(user.userId);
+    }
+  };
   onFriendClick = evt => {
     evt.preventDefault();
     const { user } = this.props;
@@ -54,29 +61,41 @@ class UserCard extends React.Component {
   };
   render() {
     const { className = "", user, store, relay, ...restProps } = this.props;
+    const disabled = store.meId == user.userId;
     const buttonClassName = "btn btn-md text-center";
     const buttonProps = {
       type: "button",
-      style: { flex: 1 }
+      style: { flex: 1 },
+      disabled
     };
+    const avatar = (
+      <UserAvatar
+        url={user.avatarUrl}
+        border
+        style={{ width: AVATARSIZE, height: AVATARSIZE }}
+      />
+    );
     return (
       <div
         {...restProps}
         style={{ width: CARDSIZE }}
-        className={`${className} card ${user.isSubscribedByMe
-          ? "border-success"
-          : ""}`}
+        className={`${className} card ${disabled
+          ? "border-primary"
+          : user.isSubscribedByMe ? "border-success" : ""}`}
       >
         <div
-          className={`d-flex align-items-center justify-content-around py-2 ${user.isSubscribedByMe
-            ? "bg-success-light"
-            : "bg-light"}`}
+          className={`d-flex align-items-center justify-content-around py-2 ${disabled
+            ? "bg-primary-light"
+            : user.isSubscribedByMe ? "bg-success-light" : "bg-light"}`}
         >
-          <UserAvatar
-            url={user.avatarUrl}
-            border
-            style={{ width: AVATARSIZE, height: AVATARSIZE }}
-          />
+          {!disabled ? (
+            <a href="#" onClick={this.onAvatarClick}>
+              {avatar}
+            </a>
+          ) : (
+            avatar
+          )}
+
           <div
             className="d-flex flex-column justify-content-center"
             style={{
@@ -93,16 +112,19 @@ class UserCard extends React.Component {
               >
                 &nbsp;
               </span>
-              {user.fullName} Cras justo odio
+              {user.fullName}
             </h6>
             <small className="d-inline-block text-truncate text-secondary">
-              {user.address} Cras justo odio
+              {user.address}
             </small>
           </div>
         </div>
         <ul className="list-group list-group-flush">
           <li className="list-group-item">
-            <div className="d-flex justify-content-center" style={{ maxHeight: AVATARSMALLSIZE }}>
+            <div
+              className="d-flex justify-content-center"
+              style={{ maxHeight: AVATARSMALLSIZE }}
+            >
               {!user.commonFriendsWithMe || !user.commonFriendsWithMe.length ? (
                 <small
                   className="d-block text-secondary"
@@ -111,7 +133,7 @@ class UserCard extends React.Component {
                     lineHeight: `${AVATARSMALLSIZE}px`
                   }}
                 >
-                  No Common Friends
+                  {disabled ? "You" : "No common friends"}
                 </small>
               ) : (
                 user.commonFriendsWithMe.map(friend => {
