@@ -20,7 +20,7 @@ class SideColumn extends React.Component {
         {...restProps}
         className={`${className} d-flex flex-column bg-light p-3`}
       >
-        <div className="card d-flex flex-column justify-content-around align-items-center mb-3">
+        <div className="card d-flex flex-column justify-content-around align-items-center border border-primary bg-primary-light mb-3">
           <UserAvatar url={store.me.avatarUrl} className="mt-3" border />
           <div className="card-body text-center p-2">
             <p className="mb-1">

@@ -30,35 +30,26 @@ class UserCard extends React.Component {
     evt.preventDefault();
     const { user } = this.props;
     const environment = this.props.relay.environment;
-    const userId = [user.userId];
-    if (user.isFriendOfMe) {
-      unfriend(environment, userId);
-    } else {
-      befriend(environment, userId);
-    }
+    const mutation = user.isFriendOfMe ? unfriend : befriend;
+    mutation(environment, [user.userId]).catch(this.handleMutationError);
   };
   onFollowClick = evt => {
     evt.preventDefault();
     const { user } = this.props;
     const environment = this.props.relay.environment;
-    const userId = [user.userId];
-    if (user.isFollowedByMe) {
-      unfollow(environment, userId);
-    } else {
-      follow(environment, userId);
-    }
+    const mutation = user.isFollowedByMe ? unfollow : follow;
+    mutation(environment, [user.userId]).catch(this.handleMutationError);
   };
   onBlockClick = evt => {
     evt.preventDefault();
     const { user } = this.props;
     const environment = this.props.relay.environment;
-    const userId = [user.userId];
-    if (user.isBlockedByMe) {
-      unblock(environment, userId);
-    } else {
-      block(environment, userId);
-    }
+    const mutation = user.isBlockedByMe ? unblock : block;
+    mutation(environment, [user.userId]).catch(this.handleMutationError);
   };
+  handleMutationError = err => {
+    window.alert("Sorry, you cannot perform this action.");
+  }
   render() {
     const { className = "", user, store, relay, ...restProps } = this.props;
     const disabled = store.meId == user.userId;
