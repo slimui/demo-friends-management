@@ -3,7 +3,7 @@ from ..errors import UserBlockedException
 from ..logging import logger
 from flask import request, g
 from sqlalchemy import (
-    Column, Integer, String, Table, ForeignKey, and_
+    Column, Integer, String, Table, ForeignKey, and_, select, func
 )
 from sqlalchemy.dialects.postgresql import insert
 
@@ -35,6 +35,78 @@ connections = Table(
     Column(
         'connection', Integer, index=True, default=CONNECTION_NONE),
 )
+
+
+def common_friends_between(source, targets):
+    """Returns an array of `(target_id, [common_friend_id, ..])` tuple where
+    - A single `source` (User or user_id)
+    - An array of `target` (User or user_id)
+
+    This is an highly optimised fetch for a fairly common operation to display
+    a list of users who have common friends with `me`.
+
+    Example:
+    ```
+    results = common_friends_between(1, [2,3,4])
+    [
+      (2, [4, 3]),
+      (3, []),
+      (4, [5])
+    ]
+    ```
+    """
+    source_id = get_user_id(source, strict=True)
+    target_ids = [get_user_id(target_id) for target_id in targets]
+    if not target_ids:
+        return []
+    # We use a WITH query (CTE Common Table Expression) to identify source's
+    # friends and use it against targets friends. This way we avoid making
+    # multiple round trips to the database. The query expression looks like:
+    #
+    # -- Define `friends` subquery, returns source's friends user_id
+    # WITH friends AS (
+    #   SELECT target_id FROM connections
+    #     WHERE source_id = [source]
+    #     AND connection & 1 > 0
+    # )
+    # -- We let postgresql do the heavy lifting by grouping the results
+    # -- by target_id and getting the source_ids an array.
+    # SELECT source_id, array_agg(target_id)
+    # FROM connections
+    # WHERE
+    #   -- source_id are the befrienders, i.e. `targets`
+    #   source_id IN ([targets]) AND
+    #   -- target_id are the common friends we target
+    #   target_id IN (SELECT target_id FROM friends) AND
+    #   connection & 1 > 0
+    # GROUP BY source_id
+    c = connections.c
+    friends = select([c.target_id]).\
+        where(
+            and_(
+                c.source_id == source_id,
+                c.connection.op('&')(CONNECTION_FRIEND) > 0
+            )
+        ).\
+        cte('friends')
+    stmt = select([
+            c.source_id,
+            func.array_agg(c.target_id)
+        ]).\
+        where(
+            and_(
+                c.source_id.in_(target_ids),
+                c.target_id.in_(select([friends.c.target_id])),
+                c.connection.op('&')(CONNECTION_FRIEND) > 0
+            )
+        ).\
+        group_by(c.source_id)
+    # {target_id: [common_friend_id, ..]}
+    common = dict(db.session.execute(stmt).fetchall())
+    return [
+        (target_id, common.get(target_id, []))
+        for target_id in target_ids
+    ]
 
 
 def get_user(user_or_id, strict=False):
