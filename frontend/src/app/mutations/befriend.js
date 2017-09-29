@@ -12,6 +12,11 @@ const mutation = graphql`
           id
           fullName
           avatarUrl
+          commonFriendsWithMe {
+            id
+            fullName
+            avatarUrl
+          }
         }
       }
       relatedUsers {
@@ -21,6 +26,11 @@ const mutation = graphql`
           id
           fullName
           avatarUrl
+          commonFriendsWithMe {
+            id
+            fullName
+            avatarUrl
+          }
         }
       }
     }

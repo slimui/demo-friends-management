@@ -1,6 +1,6 @@
 /**
  * @flow
- * @relayHash 51683ef58052ed0fc5b9bdf4a9302887
+ * @relayHash de4847aa47e08b25d049dabf764c5b9b
  */
 
 /* eslint-disable */
@@ -27,6 +27,11 @@ export type befriendMutationResponse = {|
         +id: string;
         +fullName: ?string;
         +avatarUrl: ?string;
+        +commonFriendsWithMe: ?$ReadOnlyArray<?{|
+          +id: string;
+          +fullName: ?string;
+          +avatarUrl: ?string;
+        |}>;
       |}>;
     |}>;
     +relatedUsers: ?$ReadOnlyArray<?{|
@@ -36,6 +41,11 @@ export type befriendMutationResponse = {|
         +id: string;
         +fullName: ?string;
         +avatarUrl: ?string;
+        +commonFriendsWithMe: ?$ReadOnlyArray<?{|
+          +id: string;
+          +fullName: ?string;
+          +avatarUrl: ?string;
+        |}>;
       |}>;
     |}>;
   |};
@@ -57,6 +67,11 @@ mutation befriendMutation(
         id
         fullName
         avatarUrl
+        commonFriendsWithMe {
+          id
+          fullName
+          avatarUrl
+        }
       }
     }
     relatedUsers {
@@ -66,6 +81,11 @@ mutation befriendMutation(
         id
         fullName
         avatarUrl
+        commonFriendsWithMe {
+          id
+          fullName
+          avatarUrl
+        }
       }
     }
   }
@@ -165,6 +185,38 @@ const batch /*: ConcreteBatch*/ = {
                     "args": null,
                     "name": "avatarUrl",
                     "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
                   }
                 ],
                 "storageKey": null
@@ -221,6 +273,38 @@ const batch /*: ConcreteBatch*/ = {
                     "alias": null,
                     "args": null,
                     "name": "avatarUrl",
+                    "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
                     "storageKey": null
                   }
                 ],
@@ -331,6 +415,38 @@ const batch /*: ConcreteBatch*/ = {
                     "args": null,
                     "name": "avatarUrl",
                     "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
                   }
                 ],
                 "storageKey": null
@@ -388,6 +504,38 @@ const batch /*: ConcreteBatch*/ = {
                     "args": null,
                     "name": "avatarUrl",
                     "storageKey": null
+                  },
+                  {
+                    "kind": "LinkedField",
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "User",
+                    "name": "commonFriendsWithMe",
+                    "plural": true,
+                    "selections": [
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "id",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "fullName",
+                        "storageKey": null
+                      },
+                      {
+                        "kind": "ScalarField",
+                        "alias": null,
+                        "args": null,
+                        "name": "avatarUrl",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
                   }
                 ],
                 "storageKey": null
@@ -400,7 +548,7 @@ const batch /*: ConcreteBatch*/ = {
       }
     ]
   },
-  "text": "mutation befriendMutation(\n  $input: UserConnectionMutationInput!\n) {\n  befriend(input: $input) {\n    users {\n      id\n      fullName\n      isFriendOfMe\n      isSubscribedByMe\n      commonFriendsWithMe {\n        id\n        fullName\n        avatarUrl\n      }\n    }\n    relatedUsers {\n      id\n      fullName\n      commonFriendsWithMe {\n        id\n        fullName\n        avatarUrl\n      }\n    }\n  }\n}\n"
+  "text": "mutation befriendMutation(\n  $input: UserConnectionMutationInput!\n) {\n  befriend(input: $input) {\n    users {\n      id\n      fullName\n      isFriendOfMe\n      isSubscribedByMe\n      commonFriendsWithMe {\n        id\n        fullName\n        avatarUrl\n        commonFriendsWithMe {\n          id\n          fullName\n          avatarUrl\n        }\n      }\n    }\n    relatedUsers {\n      id\n      fullName\n      commonFriendsWithMe {\n        id\n        fullName\n        avatarUrl\n        commonFriendsWithMe {\n          id\n          fullName\n          avatarUrl\n        }\n      }\n    }\n  }\n}\n"
 };
 
 module.exports = batch;
