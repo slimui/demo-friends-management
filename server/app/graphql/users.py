@@ -11,6 +11,10 @@ from promise.dataloader import DataLoader
 
 
 class UserLoader(DataLoader):
+    """Provides deferred batch loading of `User`, example:
+
+    `DataLoader.loader().load(user_id)`
+    """
 
     @classmethod
     def loader(cls):
@@ -26,6 +30,13 @@ class UserLoader(DataLoader):
 
 
 class CurrentUserCommonFriendIdsLoader(DataLoader):
+    """Provides deferred batch loading of common friend's user_id, example:
+
+    `CurrentUserCommonFriendIdsLoader.loader().load(user_id)`
+
+    Returns a `Promise` object that resolves to an array
+    of common friends user_id between current_user and user_id.
+    """
 
     @classmethod
     def loader(cls):
@@ -47,6 +58,13 @@ class CurrentUserCommonFriendIdsLoader(DataLoader):
 
 
 class CurrentUserConnectionLoader(DataLoader):
+    """Provides deferred batch loading of user connection value, example:
+
+    `CurrentUserConnectionLoader.loader().load(user_id)`
+
+    Returns a `Promise` object that resolves to an array
+    of ConnectionType value between current_user and user_id.
+    """
 
     @classmethod
     def loader(cls):

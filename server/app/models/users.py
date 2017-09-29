@@ -26,30 +26,30 @@ class ConnectionType(Enum):
     """Denotes source has subscribed to target's updates."""
 
     @classmethod
-    def is_none(cls, connection):
-        return connection == cls.NONE.value
+    def is_none(cls, value):
+        return value == cls.NONE.value
 
     @classmethod
-    def is_friend(cls, connection):
-        return cls.has_connection(connection, cls.FRIEND)
+    def is_friend(cls, value):
+        return cls.has_connection(value, cls.FRIEND)
 
     @classmethod
-    def is_follow(cls, connection):
-        return cls.has_connection(connection, cls.FOLLOW)
+    def is_follow(cls, value):
+        return cls.has_connection(value, cls.FOLLOW)
 
     @classmethod
-    def is_block(cls, connection):
-        return cls.has_connection(connection, cls.BLOCK)
+    def is_block(cls, value):
+        return cls.has_connection(value, cls.BLOCK)
 
     @classmethod
-    def is_subscribed(cls, connection):
-        if not cls.is_block(connection):
-            return cls.has_connection(connection, cls.SUBSCRIBED)
+    def is_subscribed(cls, value):
+        if not cls.is_block(value):
+            return cls.has_connection(value, cls.SUBSCRIBED)
         return False
 
     @classmethod
-    def has_connection(cls, connection, flag):
-        return connection & flag.value > 0
+    def has_connection(cls, value, flag):
+        return value & flag.value > 0
 
 
 connections = Table(
@@ -69,7 +69,7 @@ connections = Table(
 def common_friends_between(source, targets):
     """Returns an array of `(target_id, [common_friend_id, ..])` tuple where
     - A single `source` (User or user_id)
-    - An array of `target` (User or user_id)
+    - An array of `targets` (User or user_id)
 
     This is an highly optimised fetch for a fairly common operation to display
     a list of users who have common friends with `me`.
@@ -91,7 +91,7 @@ def common_friends_between(source, targets):
     # We use a WITH query (CTE Common Table Expression) to identify source's
     # friends and use it against targets friends. This way we avoid making
     # multiple round trips to the database. The query expression looks like:
-    #
+    # ----------------------------------------------------------------------
     # -- Define `friends` subquery, returns source's friends user_id
     # WITH friends AS (
     #   SELECT target_id FROM connections
@@ -109,6 +109,7 @@ def common_friends_between(source, targets):
     #   target_id IN (SELECT target_id FROM friends) AND
     #   connection & 1 > 0
     # GROUP BY source_id
+    # ----------------------------------------------------------------------
     c = connections.c
     friends = select([c.target_id]).\
         where(
@@ -172,14 +173,14 @@ def get_user_id(user_or_id, strict=False):
     return user_id
 
 
-CURRENT_USER_ID_KEY = 'x-app-current-user-id'
+HEADER_CURRENT_USER_ID_KEY = 'x-app-current-user-id'
 
 
 def current_user_id():
     """Returns the current user_id that is 'logged in'.
     Typically this information is saved in the session cookie upon successful
     user authentication. For the demo we allow users to 'switch' identity
-    by providing a 'x-app-current-user-id' information.
+    by providing a 'x-app-current-user-id' HTTP header information.
 
     When this information is not available, e.g. during testing, the default
     user_id = 1 is used.
@@ -187,7 +188,7 @@ def current_user_id():
     This method must be used within a flask request context."""
     if not hasattr(g, 'current_user_id'):
         try:
-            id = int(request.headers.get(CURRENT_USER_ID_KEY))
+            id = int(request.headers.get(HEADER_CURRENT_USER_ID_KEY))
         except:
             id = 1
         if not id:
@@ -375,12 +376,6 @@ class User(Model):
         when self (blocker) -- blocks --> user_or_id
         does not equate to user_or_id -- blocks --> self.
 
-        To create bidirectional blocking, you must establish connections
-        at both sides, example
-
-        ```
-        user1.block(user2.block(user1))
-        ```
         """
         if not self.is_blocking(user_or_id):
             self._add_connection_with(user_or_id, ConnectionType.BLOCK)
@@ -450,19 +445,19 @@ class User(Model):
                 q.scalar() or ConnectionType.NONE.value
         return self.__connections.get(user_id, ConnectionType.NONE.value)
 
-    def _add_connection_with(self, user_or_id, connection):
+    def _add_connection_with(self, user_or_id, connection_type):
         current = self._connection_with(user_or_id)
         return self._update_connection_with(
-            user_or_id, current | connection.value)
+            user_or_id, current | connection_type.value)
 
-    def _remove_connection_with(self, user_or_id, connection):
+    def _remove_connection_with(self, user_or_id, connection_type):
         current = self._connection_with(user_or_id)
         return self._update_connection_with(
-            user_or_id, current & ~connection.value)
+            user_or_id, current & ~connection_type.value)
 
-    def _has_connection_with(self, user_or_id, connection):
+    def _has_connection_with(self, user_or_id, connection_type):
         return ConnectionType.has_connection(
-            self._connection_with(user_or_id), connection)
+            self._connection_with(user_or_id), connection_type)
 
     def _update_connection_with(self, user_or_id, value):
         user_id = get_user_id(user_or_id, strict=True)
