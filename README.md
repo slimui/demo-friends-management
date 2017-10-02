@@ -54,7 +54,9 @@ The project will run the following containers:
  - `server`: Runs a python flask server with hot-reload enabled
  - `database`: Runs a PostgreSQL server. To access the database, use `docker-compose exec database psql -U app`
 
-This will setup a development environment for the project locally. To view the project in the browser, you'll need the Docker IP and access it at port `8000`, example `http://[docker-machine-ip]:8000/`
+This will setup a development environment for the project locally. To view the project in the browser, you'll need the Docker IP and access it at port `8000`, example `http://[docker-machine-ip]:8000/`.
+
+**Note: During project startup, the `frontend` container may take awhile to initialise as it needs to compile the javascript bundle for the first time. To inspect the compilation process, use `docker-compose logs -f frontend`.**
 
 This project also provides a GraphQL browser at `http://[docker-machine-ip]:8000/graphql`.
 
