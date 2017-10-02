@@ -16,6 +16,7 @@ class UsersPagination extends React.Component {
         "scroll",
         this.handleParentScroll
       );
+      this.ref = null;
     } else if (ref && !this.ref) {
       this.ref = ref;
       this.ref.parentNode.addEventListener("scroll", this.handleParentScroll);
